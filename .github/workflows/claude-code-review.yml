@@ -12,6 +12,11 @@ on:
 
 jobs:
   claude-review:
+    if: |
+      !contains(github.event.pull_request.title, 'Generated with [Claude Code]') &&
+      !contains(github.event.pull_request.body, 'Generated with [Claude Code]') &&
+      !contains(join(github.event.pull_request.commits.*.message), 'Co-authored-by: Claude')
+
     # Optional: Filter by PR author
     # if: |
     #   github.event.pull_request.user.login == 'external-contributor' ||
