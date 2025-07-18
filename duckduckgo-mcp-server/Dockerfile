@@ -1,5 +1,5 @@
 # Multi-stage build for production
-FROM rust:1.78-slim as builder
+FROM rust:1.78-slim AS builder
 
 # Install build dependencies
 RUN apt-get update && apt-get install -y \

@@ -131,7 +131,7 @@ jobs:
           # use_sticky_comment: true
           
           # Optional: Customize review based on file types
-          direct_prompt: |
+          file_specific_prompts: |
             Review this PR focusing on:
             - For Rust files: Safety, error handling, idiomatic patterns, and performance
             - For Cargo.toml: Dependency versions and security advisories
