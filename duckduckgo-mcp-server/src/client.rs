@@ -83,10 +83,10 @@ impl EnhancedDuckDuckGoClient {
         tracing::debug!("Cache miss for query: {}", request.query);
 
         let results = self.perform_search(request.clone()).await?;
-        
+
         // Cache the results
         self.cache.insert(cache_key, results.clone()).await;
-        
+
         Ok(results)
     }
 
@@ -94,7 +94,7 @@ impl EnhancedDuckDuckGoClient {
     pub async fn search_news(&self, request: SearchRequest) -> Result<Vec<SearchResult>> {
         let mut news_request = request.clone();
         news_request.query = format!("{} news", request.query);
-        
+
         let cache_key = format!(
             "news:{}:{}:{}:{}",
             request.query,
@@ -110,18 +110,18 @@ impl EnhancedDuckDuckGoClient {
 
         let results = self.perform_news_search(news_request).await?;
         self.cache.insert(cache_key, results.clone()).await;
-        
+
         Ok(results)
     }
 
     async fn perform_search(&self, request: SearchRequest) -> Result<Vec<SearchResult>> {
         let query = urlencoding::encode(&request.query);
         let mut url = format!("https://html.duckduckgo.com/html/?q={}", query);
-        
+
         if let Some(region) = &request.region {
             url.push_str(&format!("&kl={}", region));
         }
-        
+
         if let Some(time_filter) = &request.time_filter {
             url.push_str(&format!("&df={}", time_filter));
         }
@@ -138,11 +138,11 @@ impl EnhancedDuckDuckGoClient {
         let query = urlencoding::encode(&request.query);
         let mut url = format!("https://html.duckduckgo.com/html/?q={}", query);
         url.push_str("&iar=news");
-        
+
         if let Some(region) = &request.region {
             url.push_str(&format!("&kl={}", region));
         }
-        
+
         if let Some(time_filter) = &request.time_filter {
             url.push_str(&format!("&df={}", time_filter));
         }
@@ -153,20 +153,20 @@ impl EnhancedDuckDuckGoClient {
 
     async fn make_request_with_retry(&self, url: &str) -> Result<String> {
         let mut last_error = None;
-        
+
         for attempt in 0..=self.config.max_retries {
             match self.client.get(url).send().await {
                 Ok(response) => {
                     let status = response.status();
                     let body = response.text().await?;
-                    
+
                     if status.is_success() {
                         return Ok(body);
                     } else if status == reqwest::StatusCode::TOO_MANY_REQUESTS {
                         last_error = Some(anyhow::anyhow!("Rate limited by DuckDuckGo"));
                         if attempt < self.config.max_retries {
                             let delay = Duration::from_millis(
-                                self.config.retry_delay_ms * (attempt + 1) as u64
+                                self.config.retry_delay_ms * (attempt + 1) as u64,
                             );
                             sleep(delay).await;
                             continue;
@@ -188,7 +188,7 @@ impl EnhancedDuckDuckGoClient {
                 }
             }
         }
-        
+
         Err(last_error.unwrap_or_else(|| anyhow::anyhow!("Request failed after retries")))
     }
 
@@ -219,8 +219,9 @@ impl EnhancedDuckDuckGoClient {
         // Try each result selector
         for result_selector in &result_selectors {
             let elements = document.select(result_selector);
-            
-            for element in elements.take(max_results * 2) { // Take more to account for duplicates
+
+            for element in elements.take(max_results * 2) {
+                // Take more to account for duplicates
                 let mut title = String::new();
                 let mut url = String::new();
                 let mut snippet = String::new();
@@ -253,13 +254,13 @@ impl EnhancedDuckDuckGoClient {
                         source: Some("DuckDuckGo".to_string()),
                         timestamp: None,
                     });
-                    
+
                     if results.len() >= max_results {
                         break;
                     }
                 }
             }
-            
+
             if !results.is_empty() {
                 break; // Stop if we found results with this selector
             }
@@ -280,21 +281,21 @@ impl EnhancedDuckDuckGoClient {
         seen_urls: &mut HashSet<String>,
     ) -> Result<Vec<SearchResult>> {
         let mut results = Vec::new();
-        
+
         let link_selector = Selector::parse("a[href]").unwrap();
         let mut links = document.select(&link_selector);
 
         while let Some(link) = links.next() {
             if let Some(href) = link.value().attr("href") {
                 let text = self.clean_text(&link.text().collect::<String>());
-                
+
                 // Filter out navigation and non-result links
-                if !text.is_empty() 
-                    && href.starts_with("http") 
+                if !text.is_empty()
+                    && href.starts_with("http")
                     && !href.contains("duckduckgo.com")
                     && !href.contains("javascript:")
-                    && seen_urls.insert(href.to_string()) {
-                    
+                    && seen_urls.insert(href.to_string())
+                {
                     results.push(SearchResult {
                         title: text,
                         url: href.to_string(),
@@ -302,7 +303,7 @@ impl EnhancedDuckDuckGoClient {
                         source: Some("DuckDuckGo".to_string()),
                         timestamp: None,
                     });
-                    
+
                     if results.len() >= max_results {
                         break;
                     }

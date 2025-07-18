@@ -3,11 +3,7 @@ use crate::client::{EnhancedDuckDuckGoClient, SearchRequest};
 use crate::config::ServerConfig;
 use crate::mcp_types::*;
 use anyhow::Result;
-use axum::{
-    extract::State,
-    http::StatusCode,
-    response::Json,
-};
+use axum::{extract::State, http::StatusCode, response::Json};
 use serde_json::{json, Value};
 use std::sync::Arc;
 
@@ -23,7 +19,10 @@ impl McpState {
         Self {
             duckduckgo_client: Arc::new(EnhancedDuckDuckGoClient::new(config.clone())),
             config: config.clone(),
-            auth: Arc::new(AuthState::new(config.auth_config().secret_key, config.auth_config().require_auth)),
+            auth: Arc::new(AuthState::new(
+                config.auth_config().secret_key,
+                config.auth_config().require_auth,
+            )),
         }
     }
 }
@@ -133,9 +132,9 @@ pub async fn handle_call_tool(
     Json(request): Json<McpRequest>,
 ) -> Result<Json<McpResponse>, StatusCode> {
     let params = request.params.clone().unwrap_or(Value::Null);
-    
-    let call_tool_request: CallToolRequest = serde_json::from_value(params)
-        .map_err(|_| StatusCode::BAD_REQUEST)?;
+
+    let call_tool_request: CallToolRequest =
+        serde_json::from_value(params).map_err(|_| StatusCode::BAD_REQUEST)?;
 
     let result = match call_tool_request.name.as_str() {
         "search" => handle_search(&_state, call_tool_request.arguments).await,
@@ -176,14 +175,14 @@ pub async fn handle_call_tool(
     }
 }
 
-async fn handle_search(
-    state: &McpState,
-    arguments: Option<Value>,
-) -> Result<Vec<ToolContent>> {
+async fn handle_search(state: &McpState, arguments: Option<Value>) -> Result<Vec<ToolContent>> {
     let args: SearchRequest = serde_json::from_value(arguments.unwrap_or(Value::Null))
         .map_err(|e| anyhow::anyhow!("Invalid search arguments: {}", e))?;
 
-    let results = state.duckduckgo_client.search(args).await
+    let results = state
+        .duckduckgo_client
+        .search(args)
+        .await
         .map_err(|e| anyhow::anyhow!("Search failed: {}", e))?;
 
     let content = ToolContent {
@@ -201,7 +200,10 @@ async fn handle_search_news(
     let args: SearchRequest = serde_json::from_value(arguments.unwrap_or(Value::Null))
         .map_err(|e| anyhow::anyhow!("Invalid search arguments: {}", e))?;
 
-    let results = state.duckduckgo_client.search_news(args).await
+    let results = state
+        .duckduckgo_client
+        .search_news(args)
+        .await
         .map_err(|e| anyhow::anyhow!("News search failed: {}", e))?;
 
     let content = ToolContent {
@@ -212,9 +214,7 @@ async fn handle_search_news(
     Ok(vec![content])
 }
 
-pub async fn handle_ping(
-    Json(request): Json<McpRequest>,
-) -> Result<Json<McpResponse>, StatusCode> {
+pub async fn handle_ping(Json(request): Json<McpRequest>) -> Result<Json<McpResponse>, StatusCode> {
     let response = McpResponse {
         jsonrpc: "2.0".to_string(),
         id: request.id,

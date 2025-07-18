@@ -1,10 +1,6 @@
 use crate::auth::{LoginRequest, TokenRequest};
 use crate::mcp_handler::McpState;
-use axum::{
-    extract::State,
-    http::StatusCode,
-    response::Json,
-};
+use axum::{extract::State, http::StatusCode, response::Json};
 use serde_json::json;
 use std::sync::Arc;
 
@@ -59,7 +55,7 @@ pub async fn add_static_token_handler(
     Json(token_request): Json<TokenRequest>,
 ) -> Result<Json<serde_json::Value>, StatusCode> {
     state.auth.add_static_token(token_request.token).await;
-    
+
     let response = json!({
         "success": true,
         "message": "Token added successfully"
@@ -72,7 +68,7 @@ pub async fn remove_static_token_handler(
     Json(token_request): Json<TokenRequest>,
 ) -> Result<Json<serde_json::Value>, StatusCode> {
     state.auth.remove_static_token(&token_request.token).await;
-    
+
     let response = json!({
         "success": true,
         "message": "Token removed successfully"

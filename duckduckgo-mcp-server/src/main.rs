@@ -8,10 +8,10 @@ mod mcp_types;
 
 use anyhow::Result;
 use axum::{
+    http::StatusCode,
     middleware,
     routing::{get, post},
     Router,
-    http::StatusCode,
 };
 use std::sync::Arc;
 use tower_http::cors::{Any, CorsLayer};
@@ -44,16 +44,19 @@ async fn main() -> Result<()> {
         .with(
             tracing_subscriber::fmt::layer()
                 .with_target(true)
-                .with_level(true)
+                .with_level(true),
         )
-        .with(
-            tracing_subscriber::EnvFilter::from_default_env()
-                .add_directive(log_level.into())
-        )
+        .with(tracing_subscriber::EnvFilter::from_default_env().add_directive(log_level.into()))
         .init();
 
-    info!("Starting DuckDuckGo MCP Server v{}", env!("CARGO_PKG_VERSION"));
-    info!("Configuration loaded: host={}, port={}", config.host, config.port);
+    info!(
+        "Starting DuckDuckGo MCP Server v{}",
+        env!("CARGO_PKG_VERSION")
+    );
+    info!(
+        "Configuration loaded: host={}, port={}",
+        config.host, config.port
+    );
 
     let mcp_state = Arc::new(mcp_handler::McpState::new(config.clone()).await);
 
@@ -66,7 +69,13 @@ async fn main() -> Result<()> {
             .allow_headers(Any)
     } else {
         CorsLayer::new()
-            .allow_origin(config.cors_origins.iter().map(|origin| origin.parse().unwrap()).collect::<Vec<_>>())
+            .allow_origin(
+                config
+                    .cors_origins
+                    .iter()
+                    .map(|origin| origin.parse().unwrap())
+                    .collect::<Vec<_>>(),
+            )
             .allow_methods(Any)
             .allow_headers(Any)
     };
@@ -83,7 +92,10 @@ async fn main() -> Result<()> {
         .route("/auth/login", post(auth_routes::login_handler))
         .route("/auth/validate", post(auth_routes::validate_token_handler))
         .route("/auth/tokens", post(auth_routes::add_static_token_handler))
-        .route("/auth/tokens/remove", post(auth_routes::remove_static_token_handler))
+        .route(
+            "/auth/tokens/remove",
+            post(auth_routes::remove_static_token_handler),
+        )
         // Health check and metrics
         .route("/health", get(health_check))
         .route("/metrics", get(metrics))
@@ -144,10 +156,12 @@ mod tests {
             .with_state(mcp_state);
 
         let response = app
-            .oneshot(Request::builder()
-                .uri("/health")
-                .body(Body::empty())
-                .unwrap())
+            .oneshot(
+                Request::builder()
+                    .uri("/health")
+                    .body(Body::empty())
+                    .unwrap(),
+            )
             .await
             .unwrap();
 
@@ -164,12 +178,14 @@ mod tests {
             .with_state(mcp_state);
 
         let response = app
-            .oneshot(Request::builder()
-                .method("POST")
-                .uri("/mcp/ping")
-                .header("content-type", "application/json")
-                .body(Body::from(r#"{"jsonrpc":"2.0","id":1,"method":"ping"}"#))
-                .unwrap())
+            .oneshot(
+                Request::builder()
+                    .method("POST")
+                    .uri("/mcp/ping")
+                    .header("content-type", "application/json")
+                    .body(Body::from(r#"{"jsonrpc":"2.0","id":1,"method":"ping"}"#))
+                    .unwrap(),
+            )
             .await
             .unwrap();
 
