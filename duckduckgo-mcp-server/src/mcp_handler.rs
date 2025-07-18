@@ -1,5 +1,6 @@
 use crate::auth::AuthState;
-use crate::duckduckgo::{DuckDuckGoClient, SearchRequest};
+use crate::client::{EnhancedDuckDuckGoClient, SearchRequest};
+use crate::config::ServerConfig;
 use crate::mcp_types::*;
 use anyhow::Result;
 use axum::{
@@ -9,25 +10,26 @@ use axum::{
 };
 use serde_json::{json, Value};
 use std::sync::Arc;
-use tokio::sync::RwLock;
 
 #[derive(Debug, Clone)]
 pub struct McpState {
-    pub duckduckgo_client: Arc<DuckDuckGoClient>,
-    pub auth_state: Arc<AuthState>,
+    pub duckduckgo_client: Arc<EnhancedDuckDuckGoClient>,
+    pub config: ServerConfig,
+    pub auth: Arc<AuthState>,
 }
 
 impl McpState {
-    pub fn new(auth_state: Arc<AuthState>) -> Self {
+    pub async fn new(config: ServerConfig) -> Self {
         Self {
-            duckduckgo_client: Arc::new(DuckDuckGoClient::new()),
-            auth_state,
+            duckduckgo_client: Arc::new(EnhancedDuckDuckGoClient::new(config.clone())),
+            config: config.clone(),
+            auth: Arc::new(AuthState::new(config.auth_config().secret_key, config.auth_config().require_auth)),
         }
     }
 }
 
 pub async fn handle_initialize(
-    State(state): State<Arc<McpState>>,
+    State(_state): State<Arc<McpState>>,
     Json(request): Json<McpRequest>,
 ) -> Result<Json<McpResponse>, StatusCode> {
     let response = McpResponse {
@@ -50,7 +52,7 @@ pub async fn handle_initialize(
             },
             "serverInfo": {
                 "name": "duckduckgo-mcp-server",
-                "version": "0.1.0"
+                "version": env!("CARGO_PKG_VERSION")
             }
         })),
         error: None,
@@ -127,7 +129,7 @@ pub async fn handle_list_tools(
 }
 
 pub async fn handle_call_tool(
-    State(state): State<Arc<McpState>>,
+    State(_state): State<Arc<McpState>>,
     Json(request): Json<McpRequest>,
 ) -> Result<Json<McpResponse>, StatusCode> {
     let params = request.params.clone().unwrap_or(Value::Null);
@@ -136,8 +138,8 @@ pub async fn handle_call_tool(
         .map_err(|_| StatusCode::BAD_REQUEST)?;
 
     let result = match call_tool_request.name.as_str() {
-        "search" => handle_search(&state, call_tool_request.arguments).await,
-        "search_news" => handle_search_news(&state, call_tool_request.arguments).await,
+        "search" => handle_search(&_state, call_tool_request.arguments).await,
+        "search_news" => handle_search_news(&_state, call_tool_request.arguments).await,
         _ => {
             let error_response = McpResponse {
                 jsonrpc: "2.0".to_string(),
@@ -196,13 +198,10 @@ async fn handle_search_news(
     state: &McpState,
     arguments: Option<Value>,
 ) -> Result<Vec<ToolContent>> {
-    let mut args: SearchRequest = serde_json::from_value(arguments.unwrap_or(Value::Null))
+    let args: SearchRequest = serde_json::from_value(arguments.unwrap_or(Value::Null))
         .map_err(|e| anyhow::anyhow!("Invalid search arguments: {}", e))?;
 
-    // For news search, we modify the query to use DuckDuckGo news
-    args.query = format!("{} news", args.query);
-
-    let results = state.duckduckgo_client.search(args).await
+    let results = state.duckduckgo_client.search_news(args).await
         .map_err(|e| anyhow::anyhow!("News search failed: {}", e))?;
 
     let content = ToolContent {

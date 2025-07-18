@@ -1,4 +1,5 @@
-use crate::auth::{AuthResponse, AuthState, LoginRequest, TokenRequest};
+use crate::auth::{LoginRequest, TokenRequest};
+use crate::mcp_handler::McpState;
 use axum::{
     extract::State,
     http::StatusCode,
@@ -8,13 +9,13 @@ use serde_json::json;
 use std::sync::Arc;
 
 pub async fn login_handler(
-    State(auth_state): State<Arc<AuthState>>,
+    State(state): State<Arc<McpState>>,
     Json(login_request): Json<LoginRequest>,
 ) -> Result<Json<serde_json::Value>, StatusCode> {
     // Simple username/password validation
     // In production, this should check against a database
     if login_request.username == "admin" && login_request.password == "password" {
-        match auth_state.generate_token(&login_request.username) {
+        match state.auth.generate_token(&login_request.username) {
             Ok(token) => {
                 let response = json!({
                     "success": true,
@@ -31,10 +32,10 @@ pub async fn login_handler(
 }
 
 pub async fn validate_token_handler(
-    State(auth_state): State<Arc<AuthState>>,
+    State(state): State<Arc<McpState>>,
     Json(token_request): Json<TokenRequest>,
 ) -> Result<Json<serde_json::Value>, StatusCode> {
-    match auth_state.validate_token(&token_request.token).await {
+    match state.auth.validate_token(&token_request.token).await {
         Ok(true) => {
             let response = json!({
                 "valid": true,
@@ -54,10 +55,10 @@ pub async fn validate_token_handler(
 }
 
 pub async fn add_static_token_handler(
-    State(auth_state): State<Arc<AuthState>>,
+    State(state): State<Arc<McpState>>,
     Json(token_request): Json<TokenRequest>,
 ) -> Result<Json<serde_json::Value>, StatusCode> {
-    auth_state.add_static_token(token_request.token).await;
+    state.auth.add_static_token(token_request.token).await;
     
     let response = json!({
         "success": true,
@@ -67,10 +68,10 @@ pub async fn add_static_token_handler(
 }
 
 pub async fn remove_static_token_handler(
-    State(auth_state): State<Arc<AuthState>>,
+    State(state): State<Arc<McpState>>,
     Json(token_request): Json<TokenRequest>,
 ) -> Result<Json<serde_json::Value>, StatusCode> {
-    auth_state.remove_static_token(&token_request.token).await;
+    state.auth.remove_static_token(&token_request.token).await;
     
     let response = json!({
         "success": true,

@@ -1,5 +1,7 @@
 mod auth;
 mod auth_routes;
+mod client;
+mod config;
 mod duckduckgo;
 mod mcp_handler;
 mod mcp_types;
@@ -9,38 +11,15 @@ use axum::{
     middleware,
     routing::{get, post},
     Router,
+    http::StatusCode,
 };
-use clap::Parser;
 use std::sync::Arc;
 use tower_http::cors::{Any, CorsLayer};
+use tower_http::trace::TraceLayer;
 use tracing::{info, Level};
-use tracing_subscriber::FmtSubscriber;
+use tracing_subscriber::{layer::SubscriberExt, util::SubscriberInitExt, FmtSubscriber};
 
-#[derive(Parser, Debug)]
-#[command(name = "duckduckgo-mcp-server")]
-#[command(about = "DuckDuckGo MCP Server with HTTP transport")]
-#[command(version = "0.1.0")]
-struct Args {
-    /// Port to listen on
-    #[arg(short, long, default_value = "3000")]
-    port: u16,
-
-    /// Host to bind to
-    #[arg(short, long, default_value = "127.0.0.1")]
-    host: String,
-
-    /// Secret key for JWT token generation
-    #[arg(long, default_value = "your-secret-key-change-this")]
-    secret_key: String,
-
-    /// Require authentication for all requests
-    #[arg(long, default_value = "false")]
-    require_auth: bool,
-
-    /// Static API tokens (comma-separated)
-    #[arg(long)]
-    static_tokens: Option<String>,
-}
+use crate::config::ServerConfig;
 
 #[tokio::main]
 async fn main() -> Result<()> {
@@ -50,35 +29,47 @@ async fn main() -> Result<()> {
         .finish();
     tracing::subscriber::set_global_default(subscriber)?;
 
-    let args = Args::parse();
+    let config = ServerConfig::from_env();
 
-    info!("Starting DuckDuckGo MCP Server");
-    info!("Configuration: {:?}", args);
+    // Initialize tracing with configurable log level
+    let log_level = match config.log_level.as_str() {
+        "debug" => Level::DEBUG,
+        "info" => Level::INFO,
+        "warn" => Level::WARN,
+        "error" => Level::ERROR,
+        _ => Level::INFO,
+    };
 
-    // Initialize authentication state
-    let auth_state = Arc::new(auth::AuthState::new(
-        args.secret_key.clone(),
-        args.require_auth,
-    ));
+    tracing_subscriber::registry()
+        .with(
+            tracing_subscriber::fmt::layer()
+                .with_target(true)
+                .with_level(true)
+        )
+        .with(
+            tracing_subscriber::EnvFilter::from_default_env()
+                .add_directive(log_level.into())
+        )
+        .init();
 
-    // Add static tokens if provided
-    if let Some(tokens) = args.static_tokens {
-        for token in tokens.split(',') {
-            let token = token.trim().to_string();
-            if !token.is_empty() {
-                auth_state.add_static_token(token).await;
-            }
-        }
-    }
+    info!("Starting DuckDuckGo MCP Server v{}", env!("CARGO_PKG_VERSION"));
+    info!("Configuration loaded: host={}, port={}", config.host, config.port);
 
-    // Initialize MCP state
-    let mcp_state = Arc::new(mcp_handler::McpState::new(auth_state.clone()));
+    let mcp_state = Arc::new(mcp_handler::McpState::new(config.clone()).await);
 
     // Configure CORS
-    let cors = CorsLayer::new()
-        .allow_origin(Any)
-        .allow_methods(Any)
-        .allow_headers(Any);
+    // Configure CORS
+    let cors = if config.cors_origins.contains(&"*".to_string()) {
+        CorsLayer::new()
+            .allow_origin(Any)
+            .allow_methods(Any)
+            .allow_headers(Any)
+    } else {
+        CorsLayer::new()
+            .allow_origin(config.cors_origins.iter().map(|origin| origin.parse().unwrap()).collect::<Vec<_>>())
+            .allow_methods(Any)
+            .allow_headers(Any)
+    };
 
     // Build the application
     let app = Router::new()
@@ -93,23 +84,45 @@ async fn main() -> Result<()> {
         .route("/auth/validate", post(auth_routes::validate_token_handler))
         .route("/auth/tokens", post(auth_routes::add_static_token_handler))
         .route("/auth/tokens/remove", post(auth_routes::remove_static_token_handler))
-        // Health check
-        .route("/health", get(auth_routes::health_check))
-        // Apply authentication middleware
+        // Health check and metrics
+        .route("/health", get(health_check))
+        .route("/metrics", get(metrics))
+        // Apply middleware
         .layer(middleware::from_fn_with_state(
-            auth_state.clone(),
+            mcp_state.clone(),
             auth::auth_middleware,
         ))
         .layer(cors)
+        .layer(TraceLayer::new_for_http())
         .with_state(mcp_state);
 
-    let addr = format!("{}:{}", args.host, args.port);
+    let addr = format!("{}:{}", config.host, config.port);
     info!("Server listening on http://{}", addr);
 
     let listener = tokio::net::TcpListener::bind(&addr).await?;
     axum::serve(listener, app).await?;
 
     Ok(())
+}
+
+async fn health_check() -> Result<axum::Json<serde_json::Value>, StatusCode> {
+    let response = serde_json::json!({
+        "status": "healthy",
+        "service": "duckduckgo-mcp-server",
+        "version": env!("CARGO_PKG_VERSION"),
+        "timestamp": chrono::Utc::now().to_rfc3339()
+    });
+    Ok(axum::Json(response))
+}
+
+async fn metrics() -> Result<axum::Json<serde_json::Value>, StatusCode> {
+    let response = serde_json::json!({
+        "service": "duckduckgo-mcp-server",
+        "uptime": "running",
+        "version": env!("CARGO_PKG_VERSION"),
+        "timestamp": chrono::Utc::now().to_rfc3339()
+    });
+    Ok(axum::Json(response))
 }
 
 #[cfg(test)]
@@ -119,18 +132,15 @@ mod tests {
         body::Body,
         http::{Request, StatusCode},
     };
-    use tower::ServiceExt;
+    use tower::util::ServiceExt;
 
     #[tokio::test]
     async fn test_health_check() {
-        let auth_state = Arc::new(auth::AuthState::new(
-            "test-secret".to_string(),
-            false,
-        ));
-        let mcp_state = Arc::new(mcp_handler::McpState::new(auth_state));
+        let config = ServerConfig::default();
+        let mcp_state = Arc::new(mcp_handler::McpState::new(config).await);
 
         let app = Router::new()
-            .route("/health", get(auth_routes::health_check))
+            .route("/health", get(health_check))
             .with_state(mcp_state);
 
         let response = app
@@ -146,11 +156,8 @@ mod tests {
 
     #[tokio::test]
     async fn test_mcp_endpoints() {
-        let auth_state = Arc::new(auth::AuthState::new(
-            "test-secret".to_string(),
-            false,
-        ));
-        let mcp_state = Arc::new(mcp_handler::McpState::new(auth_state));
+        let config = ServerConfig::default();
+        let mcp_state = Arc::new(mcp_handler::McpState::new(config).await);
 
         let app = Router::new()
             .route("/mcp/ping", post(mcp_handler::handle_ping))

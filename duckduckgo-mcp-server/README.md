@@ -1,220 +1,342 @@
 # DuckDuckGo MCP Server
 
-一个基于HTTP的DuckDuckGo搜索MCP服务器，使用Rust编写，支持标准MCP协议和认证功能。
+A production-ready MCP (Model Context Protocol) server that provides DuckDuckGo search functionality via HTTP transport. Built with Rust for high performance and reliability.
 
-## 功能特性
+## Features
 
-- 🔍 DuckDuckGo网页搜索
-- 📰 DuckDuckGo新闻搜索
-- 🔐 标准MCP认证协议支持
-- 🌐 HTTP传输协议
-- ⚡ 高性能异步处理
-- 🛡️ JWT和静态令牌认证
-- 📊 健康检查和监控
+- 🔍 **DuckDuckGo Search**: Web and news search capabilities
+- 🚀 **High Performance**: Built with Rust for speed and efficiency
+- 🔒 **Authentication**: JWT tokens and API key support
+- 🚦 **Rate Limiting**: Configurable rate limits per client
+- 🗄️ **Caching**: Built-in caching with configurable TTL
+- 🐳 **Docker Ready**: Multi-stage Docker builds
+- 🔍 **Comprehensive Logging**: Structured logging with configurable levels
+- ⚙️ **Environment Configuration**: Full configuration via environment variables
+- 🧪 **Test Coverage**: Comprehensive unit and integration tests
 
-## 安装
+## Quick Start
 
-### 从源码构建
+### Using Docker
 
 ```bash
-# 克隆仓库
-git clone <repository-url>
+# Pull the latest image
+docker pull ghcr.io/yourusername/duckduckgo-mcp-server:latest
+
+# Run with default settings
+docker run -p 3000:3000 ghcr.io/yourusername/duckduckgo-mcp-server:latest
+
+# Run with custom configuration
+docker run -p 3000:3000 \
+  -e REQUIRE_AUTH=true \
+  -e SECRET_KEY=your-secret-key \
+  -e STATIC_TOKENS=token1,token2 \
+  ghcr.io/yourusername/duckduckgo-mcp-server:latest
+```
+
+### Using Docker Compose
+
+```bash
+# Clone the repository
+git clone https://github.com/yourusername/duckduckgo-mcp-server.git
 cd duckduckgo-mcp-server
 
-# 构建项目
-cargo build --release
+# Start with Docker Compose
+docker-compose up -d
+```
 
-# 运行服务器
+### From Source
+
+```bash
+# Clone the repository
+git clone https://github.com/yourusername/duckduckgo-mcp-server.git
+cd duckduckgo-mcp-server
+
+# Build and run
+cargo build --release
 ./target/release/duckduckgo-mcp-server
 ```
 
-## 使用方法
+## Configuration
 
-### 基本启动
+All configuration is done through environment variables:
 
-```bash
-# 默认配置：监听127.0.0.1:3000
-./duckduckgo-mcp-server
+| Variable | Default | Description |
+|----------|---------|-------------|
+| `HOST` | `127.0.0.1` | Server host address |
+| `PORT` | `3000` | Server port |
+| `LOG_LEVEL` | `info` | Logging level (debug, info, warn, error) |
+| `SECRET_KEY` | `your-secret-key-change-this` | JWT secret key |
+| `REQUIRE_AUTH` | `false` | Require authentication for all requests |
+| `STATIC_TOKENS` | `` | Comma-separated static API tokens |
+| `CORS_ORIGINS` | `*` | Comma-separated CORS origins |
+| `RATE_LIMIT_PER_MINUTE` | `60` | Rate limit per client per minute |
+| `CACHE_TTL_SECONDS` | `300` | Cache TTL in seconds |
+| `MAX_SEARCH_RESULTS` | `20` | Maximum search results per request |
+| `REQUEST_TIMEOUT_SECONDS` | `30` | HTTP request timeout |
+| `MAX_RETRIES` | `3` | Maximum retries for failed requests |
+| `RETRY_DELAY_MS` | `500` | Retry delay in milliseconds |
 
-# 自定义端口和主机
-./duckduckgo-mcp-server --port 8080 --host 0.0.0.0
+## API Endpoints
 
-# 启用认证
-./duckduckgo-mcp-server --require-auth --secret-key "your-secret-key"
-```
+### MCP Protocol Endpoints
 
-### 命令行参数
+#### Initialize
+```http
+POST /mcp/initialize
+Content-Type: application/json
 
-```bash
-duckduckgo-mcp-server [OPTIONS]
-
-OPTIONS:
-    -p, --port <PORT>          监听端口 [默认: 3000]
-    -h, --host <HOST>          绑定主机 [默认: 127.0.0.1]
-        --secret-key <KEY>     JWT密钥 [默认: your-secret-key-change-this]
-        --require-auth         启用认证要求 [默认: false]
-        --static-tokens <TOKENS>  静态API令牌（逗号分隔）
-```
-
-## API端点
-
-### MCP协议端点
-
-- `POST /mcp/initialize` - 初始化MCP连接
-- `POST /mcp/tools/list` - 获取可用工具列表
-- `POST /mcp/tools/call` - 调用工具
-- `POST /mcp/ping` - 健康检查
-
-### 认证端点
-
-- `POST /auth/login` - 用户登录获取JWT令牌
-- `POST /auth/validate` - 验证令牌有效性
-- `POST /auth/tokens` - 添加静态令牌
-- `POST /auth/tokens/remove` - 移除静态令牌
-
-### 工具端点
-
-#### 搜索工具
-
-**工具名称**: `search`
-
-**参数**:
-```json
 {
-  "query": "搜索关键词",
-  "max_results": 10,
-  "region": "us",
-  "time_filter": "d"
+  "jsonrpc": "2.0",
+  "id": 1,
+  "method": "initialize",
+  "params": {
+    "protocolVersion": "2024-11-05",
+    "capabilities": {},
+    "clientInfo": {
+      "name": "test-client",
+      "version": "1.0.0"
+    }
+  }
 }
 ```
 
-**示例请求**:
+#### List Tools
+```http
+POST /mcp/tools/list
+Content-Type: application/json
+
+{
+  "jsonrpc": "2.0",
+  "id": 1,
+  "method": "tools/list"
+}
+```
+
+#### Call Tool
+```http
+POST /mcp/tools/call
+Content-Type: application/json
+
+{
+  "jsonrpc": "2.0",
+  "id": 1,
+  "method": "tools/call",
+  "params": {
+    "name": "search",
+    "arguments": {
+      "query": "rust programming language",
+      "max_results": 5,
+      "region": "us",
+      "time_filter": "d"
+    }
+  }
+}
+```
+
+#### Ping
+```http
+POST /mcp/ping
+Content-Type: application/json
+
+{
+  "jsonrpc": "2.0",
+  "id": 1,
+  "method": "ping"
+}
+```
+
+### Authentication Endpoints
+
+#### Login
+```http
+POST /auth/login
+Content-Type: application/json
+
+{
+  "username": "admin",
+  "password": "password"
+}
+```
+
+#### Validate Token
+```http
+POST /auth/validate
+Authorization: Bearer <your-token>
+```
+
+#### Create API Key
+```http
+POST /auth/api-keys
+Authorization: Bearer <your-token>
+Content-Type: application/json
+
+{
+  "name": "my-key",
+  "scopes": ["read", "search"]
+}
+```
+
+#### List API Keys
+```http
+GET /auth/api-keys
+Authorization: Bearer <your-token>
+```
+
+#### Revoke API Key
+```http
+POST /auth/api-keys/<key-id>/revoke
+Authorization: Bearer <your-token>
+```
+
+### Health Check
+```http
+GET /health
+```
+
+### Metrics
+```http
+GET /metrics
+```
+
+## Tools
+
+### Search
+Search DuckDuckGo for web results.
+
+**Parameters:**
+- `query` (string, required): Search query
+- `max_results` (integer, optional): Maximum results (1-20, default: 10)
+- `region` (string, optional): Region code (e.g., "us", "uk", "cn")
+- `time_filter` (string, optional): Time filter ("d", "w", "m", "y")
+
+### Search News
+Search DuckDuckGo for news results.
+
+**Parameters:**
+- `query` (string, required): Search query
+- `max_results` (integer, optional): Maximum results (1-20, default: 10)
+
+## Authentication
+
+The server supports two authentication methods:
+
+### API Keys
+Include your API key in the `X-API-Key` header:
+```http
+X-API-Key: your-api-key
+```
+
+### JWT Tokens
+Obtain a token via login and include it in the `Authorization` header:
+```http
+Authorization: Bearer your-jwt-token
+```
+
+## Usage Examples
+
+### Using curl
+
 ```bash
+# Health check
+curl http://localhost:3000/health
+
+# MCP initialization
+curl -X POST http://localhost:3000/mcp/initialize \
+  -H "Content-Type: application/json" \
+  -d '{"jsonrpc":"2.0","id":1,"method":"initialize","params":{"protocolVersion":"2024-11-05","capabilities":{},"clientInfo":{"name":"test-client","version":"1.0.0"}}}'
+
+# Search using MCP
 curl -X POST http://localhost:3000/mcp/tools/call \
   -H "Content-Type: application/json" \
-  -H "Authorization: Bearer your-token" \
-  -d '{
-    "jsonrpc": "2.0",
-    "id": 1,
-    "method": "tools/call",
-    "params": {
-      "name": "search",
-      "arguments": {
-        "query": "rust programming",
-        "max_results": 5
+  -d '{"jsonrpc":"2.0","id":1,"method":"tools/call","params":{"name":"search","arguments":{"query":"rust programming","max_results":5}}}'
+```
+
+### Using JavaScript
+
+```javascript
+// MCP client example
+const response = await fetch('http://localhost:3000/mcp/tools/call', {
+  method: 'POST',
+  headers: {
+    'Content-Type': 'application/json',
+  },
+  body: JSON.stringify({
+    jsonrpc: '2.0',
+    id: 1,
+    method: 'tools/call',
+    params: {
+      name: 'search',
+      arguments: {
+        query: 'rust programming language',
+        max_results: 5
       }
     }
-  }'
+  })
+});
+
+const result = await response.json();
+console.log(result);
 ```
 
-#### 新闻搜索工具
+## Development
 
-**工具名称**: `search_news`
+### Prerequisites
+- Rust 1.75 or later
+- Docker (optional)
 
-**参数**:
-```json
-{
-  "query": "新闻关键词",
-  "max_results": 10
-}
-```
-
-## 认证配置
-
-### JWT认证
-
-1. 获取JWT令牌：
+### Setup
 ```bash
-curl -X POST http://localhost:3000/auth/login \
-  -H "Content-Type: application/json" \
-  -d '{"username": "admin", "password": "password"}'
-```
+# Install Rust if not already installed
+curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh
 
-2. 使用令牌：
-```bash
-curl -H "Authorization: Bearer your-jwt-token" ...
-```
+# Clone the repository
+git clone https://github.com/yourusername/duckduckgo-mcp-server.git
+cd duckduckgo-mcp-server
 
-### 静态令牌认证
-
-1. 添加静态令牌：
-```bash
-curl -X POST http://localhost:3000/auth/tokens \
-  -H "Content-Type: application/json" \
-  -d '{"token": "your-static-token"}'
-```
-
-2. 使用令牌：
-```bash
-curl -H "X-API-Key: your-static-token" ...
-```
-
-## MCP配置示例
-
-### VS Code Cline配置
-
-在 `~/.vscode-server/data/User/globalStorage/saoudrizwan.claude-dev/settings/cline_mcp_settings.json` 中添加：
-
-```json
-{
-  "mcpServers": {
-    "duckduckgo": {
-      "command": "node",
-      "args": ["http://localhost:3000/mcp"],
-      "transport": "http",
-      "env": {
-        "MCP_API_KEY": "your-api-token"
-      }
-    }
-  }
-}
-```
-
-### Claude Desktop配置
-
-在 `~/Library/Application Support/Claude/claude_desktop_config.json` (macOS) 或相应配置文件中添加：
-
-```json
-{
-  "mcpServers": {
-    "duckduckgo": {
-      "command": "http://localhost:3000/mcp",
-      "transport": "http",
-      "env": {
-        "MCP_API_KEY": "your-api-token"
-      }
-    }
-  }
-}
-```
-
-## 开发
-
-### 运行测试
-
-```bash
+# Run tests
 cargo test
+
+# Run with development settings
+cargo run
 ```
 
-### 代码格式化
+### Testing
 
 ```bash
-cargo fmt
+# Run all tests
+cargo test
+
+# Run unit tests only
+cargo test --test unit_tests
+
+# Run integration tests only
+cargo test --test integration_tests
+
+# Run with coverage
+cargo tarpaulin --out Html
 ```
 
-### 代码检查
+### Building
 
 ```bash
-cargo clippy
+# Debug build
+cargo build
+
+# Release build
+cargo build --release
+
+# Docker build
+docker build -t duckduckgo-mcp-server .
 ```
 
-## 环境变量
+## Contributing
 
-- `RUST_LOG`: 设置日志级别 (例如: `debug`, `info`, `warn`)
-- `MCP_SECRET_KEY`: JWT密钥 (覆盖--secret-key参数)
-- `MCP_REQUIRE_AUTH`: 是否要求认证 (覆盖--require-auth参数)
-- `MCP_STATIC_TOKENS`: 静态API令牌 (覆盖--static-tokens参数)
+1. Fork the repository
+2. Create a feature branch (`git checkout -b feature/amazing-feature`)
+3. Commit your changes (`git commit -m 'Add some amazing feature'`)
+4. Push to the branch (`git push origin feature/amazing-feature`)
+5. Open a Pull Request
 
-## 许可证
+## License
 
-MIT License
+This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.

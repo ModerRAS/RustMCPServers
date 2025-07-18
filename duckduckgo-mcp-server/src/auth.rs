@@ -100,11 +100,12 @@ impl AuthState {
 }
 
 pub async fn auth_middleware(
-    State(auth_state): State<Arc<AuthState>>,
+    State(state): State<Arc<crate::mcp_handler::McpState>>,
     headers: HeaderMap,
     mut request: axum::extract::Request,
     next: Next,
 ) -> Result<Response, StatusCode> {
+    let auth_state = &state.auth;
     if !auth_state.config.require_auth {
         return Ok(next.run(request).await);
     }
