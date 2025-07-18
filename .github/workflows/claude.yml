@@ -82,39 +82,25 @@ jobs:
           cargo install cargo-tarpaulin || true
 
       - name: Check Rust formatting
-        run: |
-          cd duckduckgo-mcp-server
-          cargo fmt --all -- --check
+        run: cargo fmt --all -- --check
 
       - name: Run Clippy
-        run: |
-          cd duckduckgo-mcp-server
-          cargo clippy --all-targets --all-features -- -D warnings
+        run: cargo clippy --all-targets --all-features -- -D warnings
 
       - name: Run tests
-        run: |
-          cd duckduckgo-mcp-server
-          cargo test --all-features
+        run: cargo test --all-features
 
       - name: Security audit
-        run: |
-          cd duckduckgo-mcp-server
-          cargo audit || true
+        run: cargo audit || true
 
       - name: Build release
-        run: |
-          cd duckduckgo-mcp-server
-          cargo build --release
+        run: cargo build --release
 
       - name: Build Docker image
-        run: |
-          cd duckduckgo-mcp-server
-          docker build -t duckduckgo-mcp-server .
+        run: docker build -t duckduckgo-mcp-server .
 
       - name: Run integration tests
-        run: |
-          cd duckduckgo-mcp-server
-          cargo test --test integration_tests -- --nocapture
+        run: cargo test --test integration_tests -- --nocapture
 
       - name: Run Claude Code
         id: claude
