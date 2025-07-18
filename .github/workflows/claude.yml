@@ -30,6 +30,92 @@ jobs:
         with:
           fetch-depth: 1
 
+      - name: Install Rust toolchain
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          components: rustfmt, clippy, rust-src
+
+      - name: Cache Rust dependencies
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.cargo/registry
+            ~/.cargo/git
+            target/
+          key: ${{ runner.os }}-cargo-${{ hashFiles('**/Cargo.lock') }}
+          restore-keys: |
+            ${{ runner.os }}-cargo-
+
+      - name: Cache Claude Code dependencies
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.anthropic
+            ~/.claude
+            ~/.cache/claude
+          key: ${{ runner.os }}-claude-${{ hashFiles('**/Cargo.lock', '**/package.json', '**/requirements.txt') }}
+          restore-keys: |
+            ${{ runner.os }}-claude-
+
+      - name: Install additional tools
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y \
+            build-essential \
+            pkg-config \
+            libssl-dev \
+            curl \
+            wget \
+            git \
+            docker.io \
+            docker-compose \
+            jq \
+            yq
+
+      - name: Setup Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Install cargo tools
+        run: |
+          cargo install cargo-audit || true
+          cargo install cargo-outdated || true
+          cargo install cargo-tarpaulin || true
+
+      - name: Check Rust formatting
+        run: |
+          cd duckduckgo-mcp-server
+          cargo fmt --all -- --check
+
+      - name: Run Clippy
+        run: |
+          cd duckduckgo-mcp-server
+          cargo clippy --all-targets --all-features -- -D warnings
+
+      - name: Run tests
+        run: |
+          cd duckduckgo-mcp-server
+          cargo test --all-features
+
+      - name: Security audit
+        run: |
+          cd duckduckgo-mcp-server
+          cargo audit || true
+
+      - name: Build release
+        run: |
+          cd duckduckgo-mcp-server
+          cargo build --release
+
+      - name: Build Docker image
+        run: |
+          cd duckduckgo-mcp-server
+          docker build -t duckduckgo-mcp-server .
+
+      - name: Run integration tests
+        run: |
+          cd duckduckgo-mcp-server
+          cargo test --test integration_tests -- --nocapture
+
       - name: Run Claude Code
         id: claude
         uses: anthropics/claude-code-action@beta
@@ -50,15 +136,15 @@ jobs:
           # assignee_trigger: "claude-bot"
           
           # Optional: Allow Claude to run specific commands
-          # allowed_tools: "Bash(npm install),Bash(npm run build),Bash(npm run test:*),Bash(npm run lint:*)"
+          allowed_tools: "Bash(cargo build),Bash(cargo test),Bash(cargo fmt),Bash(cargo clippy),Bash(docker build),Bash(docker run),Bash(cargo audit),Bash(cargo outdated)"
           
           # Optional: Add custom instructions for Claude to customize its behavior for your project
-          # custom_instructions: |
-          #   Follow our coding standards
-          #   Ensure all new code has tests
-          #   Use TypeScript for new files
-          
-          # Optional: Custom environment variables for Claude
+          custom_instructions: |
+            This is a Rust workspace with a DuckDuckGo MCP server in duckduckgo-mcp-server/
+            Use cargo commands for building and testing
+            Follow Rust best practices and the project structure defined in CLAUDE.md
+            Ensure all code passes clippy and formatting checks
+            
         env:
           ANTHROPIC_BASE_URL: https://api.moonshot.cn/anthropic/
 

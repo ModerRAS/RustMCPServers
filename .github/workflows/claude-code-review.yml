@@ -36,6 +36,72 @@ jobs:
         with:
           fetch-depth: 1
 
+      - name: Install Rust toolchain
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          components: rustfmt, clippy, rust-src
+
+      - name: Cache Rust dependencies
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.cargo/registry
+            ~/.cargo/git
+            target/
+          key: ${{ runner.os }}-cargo-${{ hashFiles('**/Cargo.lock') }}
+          restore-keys: |
+            ${{ runner.os }}-cargo-
+
+      - name: Cache Claude Code dependencies
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.anthropic
+            ~/.claude
+            ~/.cache/claude
+          key: ${{ runner.os }}-claude-${{ hashFiles('**/Cargo.lock', '**/package.json', '**/requirements.txt') }}
+          restore-keys: |
+            ${{ runner.os }}-claude-
+
+      - name: Install additional tools
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y \
+            build-essential \
+            pkg-config \
+            libssl-dev \
+            curl \
+            wget \
+            git \
+            docker.io \
+            docker-compose \
+            jq \
+            yq
+
+      - name: Setup Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Install cargo tools
+        run: |
+          cargo install cargo-audit || true
+          cargo install cargo-outdated || true
+          cargo install cargo-tarpaulin || true
+
+      - name: Check Rust formatting
+        run: |
+          cd duckduckgo-mcp-server
+          cargo fmt --all -- --check
+
+      - name: Run Clippy
+        run: |
+          cd duckduckgo-mcp-server
+          cargo clippy --all-targets --all-features -- -D warnings
+
+      - name: Run tests
+        run: |
+          cd duckduckgo-mcp-server
+          cargo test --all-features
+
       - name: Run Claude Code Review
         id: claude-review
         uses: anthropics/claude-code-action@beta
@@ -55,6 +121,9 @@ jobs:
             - Performance considerations
             - Security concerns
             - Test coverage
+            - Rust-specific idioms and patterns
+            - Cargo.toml dependencies
+            - Docker configurations
             
             Be constructive and helpful in your feedback.
 
@@ -62,12 +131,13 @@ jobs:
           # use_sticky_comment: true
           
           # Optional: Customize review based on file types
-          # direct_prompt: |
-          #   Review this PR focusing on:
-          #   - For TypeScript files: Type safety and proper interface usage
-          #   - For API endpoints: Security, input validation, and error handling
-          #   - For React components: Performance, accessibility, and best practices
-          #   - For tests: Coverage, edge cases, and test quality
+          direct_prompt: |
+            Review this PR focusing on:
+            - For Rust files: Safety, error handling, idiomatic patterns, and performance
+            - For Cargo.toml: Dependency versions and security advisories
+            - For Docker files: Security, efficiency, and best practices
+            - For tests: Coverage, edge cases, and test quality
+            - For GitHub Actions: Security and efficiency
           
           # Optional: Different prompts for different authors
           # direct_prompt: |
@@ -76,7 +146,7 @@ jobs:
           #   'Please provide a thorough code review focusing on our coding standards and best practices.' }}
           
           # Optional: Add specific tools for running tests or linting
-          # allowed_tools: "Bash(npm run test),Bash(npm run lint),Bash(npm run typecheck)"
+          allowed_tools: "Bash(cargo build),Bash(cargo test),Bash(cargo fmt),Bash(cargo clippy),Bash(docker build),Bash(docker run),Bash(cargo audit),Bash(cargo outdated)"
           
           # Optional: Skip review for certain conditions
           # if: |
