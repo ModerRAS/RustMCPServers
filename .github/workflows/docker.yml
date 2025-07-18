@@ -49,8 +49,8 @@ jobs:
       id: build
       uses: docker/build-push-action@v5
       with:
-        context: .
-        file: ./Dockerfile
+        context: ./duckduckgo-mcp-server
+        file: ./duckduckgo-mcp-server/Dockerfile
         push: true
         tags: ${{ steps.meta.outputs.tags }}
         labels: ${{ steps.meta.outputs.labels }}
