@@ -20,24 +20,24 @@ A production-ready MCP (Model Context Protocol) server that provides DuckDuckGo 
 
 ```bash
 # Pull the latest image
-docker pull ghcr.io/yourusername/duckduckgo-mcp-server:latest
+docker pull ghcr.io/moderRAS/duckduckgo-mcp-server:latest
 
 # Run with default settings
-docker run -p 3000:3000 ghcr.io/yourusername/duckduckgo-mcp-server:latest
+docker run -p 3000:3000 ghcr.io/moderRAS/duckduckgo-mcp-server:latest
 
 # Run with custom configuration
 docker run -p 3000:3000 \
   -e REQUIRE_AUTH=true \
   -e SECRET_KEY=your-secret-key \
   -e STATIC_TOKENS=token1,token2 \
-  ghcr.io/yourusername/duckduckgo-mcp-server:latest
+  ghcr.io/moderRAS/duckduckgo-mcp-server:latest
 ```
 
 ### Using Docker Compose
 
 ```bash
 # Clone the repository
-git clone https://github.com/yourusername/duckduckgo-mcp-server.git
+git clone https://github.com/ModerRAS/RustMCPServers.git
 cd duckduckgo-mcp-server
 
 # Start with Docker Compose
@@ -48,7 +48,7 @@ docker-compose up -d
 
 ```bash
 # Clone the repository
-git clone https://github.com/yourusername/duckduckgo-mcp-server.git
+git clone https://github.com/ModerRAS/RustMCPServers.git
 cd duckduckgo-mcp-server
 
 # Build and run
@@ -290,7 +290,7 @@ console.log(result);
 curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh
 
 # Clone the repository
-git clone https://github.com/yourusername/duckduckgo-mcp-server.git
+git clone https://github.com/ModerRAS/RustMCPServers.git
 cd duckduckgo-mcp-server
 
 # Run tests
