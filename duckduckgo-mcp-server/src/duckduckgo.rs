@@ -26,12 +26,21 @@ fn default_max_results() -> usize {
     10
 }
 
+#[allow(dead_code)]
 pub struct DuckDuckGoClient {
     client: reqwest::Client,
     max_retries: u32,
     retry_delay: Duration,
 }
 
+#[allow(dead_code)]
+impl Default for DuckDuckGoClient {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
+#[allow(dead_code)]
 impl DuckDuckGoClient {
     pub fn new() -> Self {
         let client = reqwest::Client::builder()
@@ -64,7 +73,7 @@ impl DuckDuckGoClient {
                     } else if response.status() == reqwest::StatusCode::TOO_MANY_REQUESTS {
                         last_error = Some(anyhow::anyhow!("Rate limited (429)"));
                         if attempt < self.max_retries {
-                            sleep(self.retry_delay * (attempt + 1) as u32).await;
+                            sleep(self.retry_delay * (attempt + 1)).await;
                             continue;
                         }
                     } else {
@@ -96,16 +105,16 @@ impl DuckDuckGoClient {
 
     pub async fn search(&self, request: SearchRequest) -> Result<Vec<SearchResult>> {
         let query = urlencoding::encode(&request.query);
-        let mut url = format!("https://html.duckduckgo.com/html/?q={}", query);
+        let mut url = format!("https://html.duckduckgo.com/html/?q={query}");
 
         // Add region parameter if specified
         if let Some(region) = &request.region {
-            url.push_str(&format!("&kl={}", region));
+            url.push_str(&format!("&kl={region}"));
         }
 
         // Add time filter if specified
         if let Some(time_filter) = &request.time_filter {
-            url.push_str(&format!("&df={}", time_filter));
+            url.push_str(&format!("&df={time_filter}"));
         }
 
         let body = self.make_request_with_retry(&url).await?;
@@ -116,17 +125,17 @@ impl DuckDuckGoClient {
     pub async fn search_news(&self, request: SearchRequest) -> Result<Vec<SearchResult>> {
         let query_str = format!("{} news", request.query);
         let query = urlencoding::encode(&query_str);
-        let mut url = format!("https://html.duckduckgo.com/html/?q={}", query);
+        let mut url = format!("https://html.duckduckgo.com/html/?q={query}");
 
         // Add news-specific parameters
         url.push_str("&iar=news");
 
         if let Some(region) = &request.region {
-            url.push_str(&format!("&kl={}", region));
+            url.push_str(&format!("&kl={region}"));
         }
 
         if let Some(time_filter) = &request.time_filter {
-            url.push_str(&format!("&df={}", time_filter));
+            url.push_str(&format!("&df={time_filter}"));
         }
 
         let body = self.make_request_with_retry(&url).await?;
@@ -203,18 +212,18 @@ impl DuckDuckGoClient {
             }
 
             // Clean up the URL (handle DuckDuckGo redirects)
-            let clean_url = if url.starts_with("/l/?kh=-1&uddg=") {
-                urlencoding::decode(&url[15..])
+            let clean_url = if let Some(stripped) = url.strip_prefix("/l/?kh=-1&uddg=") {
+                urlencoding::decode(stripped)
                     .unwrap_or_default()
                     .to_string()
-            } else if url.starts_with("//duckduckgo.com/l/?kh=-1&uddg=") {
-                urlencoding::decode(&url[29..])
+            } else if let Some(stripped) = url.strip_prefix("//duckduckgo.com/l/?kh=-1&uddg=") {
+                urlencoding::decode(stripped)
                     .unwrap_or_default()
                     .to_string()
             } else if url.starts_with("http") {
                 url
-            } else if url.starts_with("/") {
-                format!("https://duckduckgo.com{}", url)
+            } else if let Some(stripped) = url.strip_prefix("/") {
+                format!("https://duckduckgo.com{stripped}")
             } else {
                 url
             };
@@ -274,8 +283,7 @@ impl DuckDuckGoClient {
     }
 
     fn clean_text(&self, text: &str) -> String {
-        text.replace('\n', " ")
-            .replace('\t', " ")
+        text.replace(['\n', '\t'], " ")
             .split_whitespace()
             .collect::<Vec<_>>()
             .join(" ")

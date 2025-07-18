@@ -30,6 +30,18 @@ pub struct SearchRequest {
     pub safe_search: Option<bool>,
 }
 
+impl Default for SearchRequest {
+    fn default() -> Self {
+        Self {
+            query: String::new(),
+            max_results: default_max_results(),
+            region: None,
+            time_filter: None,
+            safe_search: None,
+        }
+    }
+}
+
 fn default_max_results() -> usize {
     10
 }
@@ -116,14 +128,14 @@ impl EnhancedDuckDuckGoClient {
 
     async fn perform_search(&self, request: SearchRequest) -> Result<Vec<SearchResult>> {
         let query = urlencoding::encode(&request.query);
-        let mut url = format!("https://html.duckduckgo.com/html/?q={}", query);
+        let mut url = format!("https://html.duckduckgo.com/html/?q={query}");
 
         if let Some(region) = &request.region {
-            url.push_str(&format!("&kl={}", region));
+            url.push_str(&format!("&kl={region}"));
         }
 
         if let Some(time_filter) = &request.time_filter {
-            url.push_str(&format!("&df={}", time_filter));
+            url.push_str(&format!("&df={time_filter}"));
         }
 
         if let Some(safe) = request.safe_search {
@@ -136,15 +148,15 @@ impl EnhancedDuckDuckGoClient {
 
     async fn perform_news_search(&self, request: SearchRequest) -> Result<Vec<SearchResult>> {
         let query = urlencoding::encode(&request.query);
-        let mut url = format!("https://html.duckduckgo.com/html/?q={}", query);
+        let mut url = format!("https://html.duckduckgo.com/html/?q={query}");
         url.push_str("&iar=news");
 
         if let Some(region) = &request.region {
-            url.push_str(&format!("&kl={}", region));
+            url.push_str(&format!("&kl={region}"));
         }
 
         if let Some(time_filter) = &request.time_filter {
-            url.push_str(&format!("&df={}", time_filter));
+            url.push_str(&format!("&df={time_filter}"));
         }
 
         let body = self.make_request_with_retry(&url).await?;
@@ -283,9 +295,9 @@ impl EnhancedDuckDuckGoClient {
         let mut results = Vec::new();
 
         let link_selector = Selector::parse("a[href]").unwrap();
-        let mut links = document.select(&link_selector);
+        let links = document.select(&link_selector);
 
-        while let Some(link) = links.next() {
+        for link in links {
             if let Some(href) = link.value().attr("href") {
                 let text = self.clean_text(&link.text().collect::<String>());
 
@@ -315,9 +327,7 @@ impl EnhancedDuckDuckGoClient {
     }
 
     fn clean_text(&self, text: &str) -> String {
-        text.replace('\n', " ")
-            .replace('\t', " ")
-            .replace('\r', " ")
+        text.replace(['\n', '\t', '\r'], " ")
             .split_whitespace()
             .collect::<Vec<_>>()
             .join(" ")
@@ -326,27 +336,29 @@ impl EnhancedDuckDuckGoClient {
     }
 
     fn clean_url(&self, url: &str) -> String {
-        if url.starts_with("/l/?kh=-1&uddg=") {
-            urlencoding::decode(&url[15..])
+        if let Some(stripped) = url.strip_prefix("/l/?kh=-1&uddg=") {
+            urlencoding::decode(stripped)
                 .unwrap_or_default()
                 .to_string()
-        } else if url.starts_with("//duckduckgo.com/l/?kh=-1&uddg=") {
-            urlencoding::decode(&url[29..])
+        } else if let Some(stripped) = url.strip_prefix("//duckduckgo.com/l/?kh=-1&uddg=") {
+            urlencoding::decode(stripped)
                 .unwrap_or_default()
                 .to_string()
         } else if url.starts_with("http") {
             url.to_string()
-        } else if url.starts_with("/") {
-            format!("https://duckduckgo.com{}", url)
+        } else if let Some(stripped) = url.strip_prefix("/") {
+            format!("https://duckduckgo.com{stripped}")
         } else {
             url.to_string()
         }
     }
 
+    #[allow(dead_code)]
     pub async fn clear_cache(&self) {
         self.cache.invalidate_all();
     }
 
+    #[allow(dead_code)]
     pub fn cache_stats(&self) -> (u64, u64) {
         (self.cache.entry_count(), 0)
     }

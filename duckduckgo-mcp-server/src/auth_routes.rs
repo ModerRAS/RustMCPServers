@@ -76,6 +76,7 @@ pub async fn remove_static_token_handler(
     Ok(Json(response))
 }
 
+#[allow(dead_code)]
 pub async fn health_check() -> Result<Json<serde_json::Value>, StatusCode> {
     let response = json!({
         "status": "healthy",

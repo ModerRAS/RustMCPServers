@@ -151,14 +151,17 @@ impl McpError {
         }
     }
 
+    #[allow(dead_code)]
     pub fn invalid_params(message: String) -> Self {
         Self::new(-32602, message)
     }
 
+    #[allow(dead_code)]
     pub fn method_not_found(message: String) -> Self {
         Self::new(-32601, message)
     }
 
+    #[allow(dead_code)]
     pub fn internal_error(message: String) -> Self {
         Self::new(-32603, message)
     }

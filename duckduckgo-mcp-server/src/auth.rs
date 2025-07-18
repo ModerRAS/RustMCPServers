@@ -117,8 +117,8 @@ pub async fn auth_middleware(
 
     let token = match auth_header {
         Some(header) => {
-            if header.starts_with("Bearer ") {
-                &header[7..]
+            if let Some(stripped) = header.strip_prefix("Bearer ") {
+                stripped
             } else {
                 header
             }

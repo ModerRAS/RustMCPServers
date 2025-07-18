@@ -10,6 +10,7 @@ use std::sync::Arc;
 #[derive(Debug, Clone)]
 pub struct McpState {
     pub duckduckgo_client: Arc<EnhancedDuckDuckGoClient>,
+    #[allow(dead_code)]
     pub config: ServerConfig,
     pub auth: Arc<AuthState>,
 }
