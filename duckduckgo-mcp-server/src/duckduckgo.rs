@@ -23,6 +23,7 @@ pub struct SearchRequest {
 }
 
 impl SearchRequest {
+    #[allow(dead_code)]
     pub fn new(query: impl Into<String>) -> Self {
         Self {
             query: query.into(),
@@ -32,6 +33,7 @@ impl SearchRequest {
         }
     }
 
+    #[allow(dead_code)]
     pub fn with_params(
         query: impl Into<String>,
         max_results: usize,
