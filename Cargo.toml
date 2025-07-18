@@ -1,0 +1,6 @@
+[workspace]
+members = ["duckduckgo-mcp-server"]
+resolver = "2"
+
+[workspace.dependencies]
+# Add any shared dependencies here if needed

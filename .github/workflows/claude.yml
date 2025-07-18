@@ -42,7 +42,7 @@ jobs:
             ~/.cargo/registry
             ~/.cargo/git
             target/
-          key: ${{ runner.os }}-cargo-${{ hashFiles('**/Cargo.lock') }}
+          key: ${{ runner.os }}-cargo-${{ hashFiles('Cargo.lock') }}
           restore-keys: |
             ${{ runner.os }}-cargo-
 
@@ -126,8 +126,8 @@ jobs:
           
           # Optional: Add custom instructions for Claude to customize its behavior for your project
           custom_instructions: |
-            This is a Rust workspace with a DuckDuckGo MCP server in duckduckgo-mcp-server/
-            Use cargo commands for building and testing
+            This is a Rust workspace with a DuckDuckGo MCP server as the primary member
+            Use cargo commands for building and testing from the workspace root
             Follow Rust best practices and the project structure defined in CLAUDE.md
             Ensure all code passes clippy and formatting checks
             
