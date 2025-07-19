@@ -280,12 +280,12 @@ mod duckduckgo_client_tests {
         };
 
         let results = client.search(request).await;
-        
+
         match results {
             Ok(results) => {
                 assert!(!results.is_empty(), "Weather search should return results");
                 println!("Found {} weather results", results.len());
-                
+
                 // Print first few results for debugging
                 for (i, result) in results.iter().take(3).enumerate() {
                     println!("Result {}: {} - {}", i + 1, result.title, result.url);
@@ -293,7 +293,7 @@ mod duckduckgo_client_tests {
             }
             Err(e) => {
                 // Document the issue but don't fail the test
-                println!("Weather search failed: {}", e);
+                println!("Weather search failed: {e}");
                 // Create a test file to document this issue
                 let _ = std::fs::write(
                     "/tmp/duckduckgo_weather_search_issue.log",
@@ -317,21 +317,27 @@ mod duckduckgo_client_tests {
         };
 
         let results = client.search(request).await;
-        
+
         match results {
             Ok(results) => {
-                assert!(!results.is_empty(), "Google search should definitely return results");
+                assert!(
+                    !results.is_empty(),
+                    "Google search should definitely return results"
+                );
                 println!("Found {} Google results", results.len());
-                
+
                 // Validate result structure
                 for result in &results {
                     assert!(!result.title.is_empty(), "Title should not be empty");
                     assert!(!result.url.is_empty(), "URL should not be empty");
-                    assert!(result.url.starts_with("http"), "URL should be valid HTTP(S)");
+                    assert!(
+                        result.url.starts_with("http"),
+                        "URL should be valid HTTP(S)"
+                    );
                 }
             }
             Err(e) => {
-                println!("Google search failed: {}", e);
+                println!("Google search failed: {e}");
                 let _ = std::fs::write(
                     "/tmp/duckduckgo_google_search_issue.log",
                     format!("Google search failed at {}: {}", chrono::Utc::now(), e),
@@ -354,14 +360,17 @@ mod duckduckgo_client_tests {
         };
 
         let results = client.search_news(request).await;
-        
+
         match results {
             Ok(results) => {
-                assert!(!results.is_empty(), "Technology news search should return results");
+                assert!(
+                    !results.is_empty(),
+                    "Technology news search should return results"
+                );
                 println!("Found {} technology news results", results.len());
             }
             Err(e) => {
-                println!("Technology news search failed: {}", e);
+                println!("Technology news search failed: {e}");
                 let _ = std::fs::write(
                     "/tmp/duckduckgo_news_search_issue.log",
                     format!("News search failed at {}: {}", chrono::Utc::now(), e),
@@ -397,7 +406,7 @@ mod duckduckgo_client_tests {
             (Ok(r1), Ok(r2)) => {
                 assert_eq!(r1.len(), r2.len(), "Cache should return same results");
                 // Cache hit should be faster (though this is not guaranteed)
-                println!("First call took: {:?}, second call took: {:?}", duration1, duration2);
+                println!("First call took: {duration1:?}, second call took: {duration2:?}");
             }
             _ => {
                 println!("Cache test failed - one or both searches failed");
@@ -443,7 +452,7 @@ mod end_to_end_tests {
 
         // Step 1: Initialize
         let init_response = client
-            .post(&format!("http://{}/mcp/initialize", addr))
+            .post(format!("http://{addr}/mcp/initialize"))
             .json(&json!({
                 "jsonrpc": "2.0",
                 "id": 1,
@@ -468,7 +477,7 @@ mod end_to_end_tests {
 
         // Step 2: List tools
         let tools_response = client
-            .post(&format!("http://{}/mcp/tools/list", addr))
+            .post(format!("http://{addr}/mcp/tools/list"))
             .json(&json!({
                 "jsonrpc": "2.0",
                 "id": 2,
@@ -486,7 +495,7 @@ mod end_to_end_tests {
 
         // Step 3: Call search tool with a definite query
         let search_response = client
-            .post(&format!("http://{}/mcp/tools/call", addr))
+            .post(format!("http://{addr}/mcp/tools/call"))
             .json(&json!({
                 "jsonrpc": "2.0",
                 "id": 3,
@@ -512,23 +521,26 @@ mod end_to_end_tests {
         let content = search_data["result"]["content"].as_array().unwrap();
         if !content.is_empty() {
             let text_content = content[0]["text"].as_str().unwrap();
-            let search_results: Vec<duckduckgo_mcp_server::client::SearchResult> = 
+            let search_results: Vec<duckduckgo_mcp_server::client::SearchResult> =
                 serde_json::from_str(text_content).unwrap();
-            
+
             println!("End-to-end search found {} results", search_results.len());
-            
+
             if search_results.is_empty() {
                 println!("WARNING: End-to-end search returned empty results - this may indicate a DuckDuckGo access issue");
                 let _ = std::fs::write(
                     "/tmp/end_to_end_search_issue.log",
-                    format!("End-to-end search returned empty results at {}", chrono::Utc::now()),
+                    format!(
+                        "End-to-end search returned empty results at {}",
+                        chrono::Utc::now()
+                    ),
                 );
             }
         }
 
         // Step 4: Ping test
         let ping_response = client
-            .post(&format!("http://{}/mcp/ping", addr))
+            .post(format!("http://{addr}/mcp/ping"))
             .json(&json!({
                 "jsonrpc": "2.0",
                 "id": 4,
@@ -551,7 +563,7 @@ mod end_to_end_tests {
         let client = reqwest::Client::new();
 
         let search_response = client
-            .post(&format!("http://{}/mcp/tools/call", addr))
+            .post(format!("http://{addr}/mcp/tools/call"))
             .json(&json!({
                 "jsonrpc": "2.0",
                 "id": 1,
@@ -577,9 +589,9 @@ mod end_to_end_tests {
         let content = search_data["result"]["content"].as_array().unwrap();
         if !content.is_empty() {
             let text_content = content[0]["text"].as_str().unwrap();
-            let search_results: Result<Vec<duckduckgo_mcp_server::client::SearchResult>, _> = 
+            let search_results: Result<Vec<duckduckgo_mcp_server::client::SearchResult>, _> =
                 serde_json::from_str(text_content);
-            
+
             match search_results {
                 Ok(results) => {
                     println!("End-to-end news search found {} results", results.len());
@@ -588,7 +600,7 @@ mod end_to_end_tests {
                     }
                 }
                 Err(e) => {
-                    println!("Failed to parse news search results: {}", e);
+                    println!("Failed to parse news search results: {e}");
                 }
             }
         }
@@ -603,7 +615,7 @@ mod mock_search_tests {
     #[tokio::test]
     async fn test_mocked_search_response() {
         let mut server = Server::new();
-        
+
         // Create mock HTML response
         let mock_html = r#"
         <html>
@@ -640,10 +652,10 @@ mod mock_search_tests {
             .create();
 
         // Override config to use mock server
-        let mut config = ServerConfig::default();
+        let _config = ServerConfig::default();
         // Note: This would require modifying the client to use a custom base URL
         // For now, we'll use the real client but with a controlled test
-        
+
         let config = ServerConfig::default();
         let client = EnhancedDuckDuckGoClient::new(config);
 
@@ -655,8 +667,8 @@ mod mock_search_tests {
             safe_search: None,
         };
 
-        let results = client.search(request).await;
-        
+        let _results = client.search(request).await;
+
         // We'll allow this to fail since we can't easily mock the URL
         // The main value is in the protocol testing above
         println!("Mock search test - this may fail due to URL configuration");
@@ -675,7 +687,7 @@ async fn test_serialization_consistency() {
     };
 
     let serialized = serde_json::to_string(&search_result).unwrap();
-    let deserialized: duckduckgo_mcp_server::client::SearchResult = 
+    let deserialized: duckduckgo_mcp_server::client::SearchResult =
         serde_json::from_str(&serialized).unwrap();
 
     assert_eq!(search_result.title, deserialized.title);

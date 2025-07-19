@@ -1,4 +1,3 @@
-use anyhow::Result;
 use duckduckgo_mcp_server::client::{EnhancedDuckDuckGoClient, SearchRequest};
 use duckduckgo_mcp_server::config::ServerConfig;
 
@@ -24,7 +23,10 @@ mod duckduckgo_real_tests {
 
         match client.search(request).await {
             Ok(results) => {
-                println!("✅ Weather search successful - found {} results", results.len());
+                println!(
+                    "✅ Weather search successful - found {} results",
+                    results.len()
+                );
                 if !results.is_empty() {
                     for (i, result) in results.iter().take(2).enumerate() {
                         println!("  {}. {} - {}", i + 1, result.title, result.url);
@@ -34,11 +36,11 @@ mod duckduckgo_real_tests {
                 }
             }
             Err(e) => {
-                println!("❌ Weather search failed: {}", e);
+                println!("❌ Weather search failed: {e}");
                 // Log to file for documentation
                 let _ = std::fs::write(
                     "/tmp/duckduckgo_weather_search_issue.log",
-                    format!("Weather search failed at {}: {}", chrono::Utc::now(), e),
+                    format!("Weather search failed at {}: {e}", chrono::Utc::now()),
                 );
             }
         }
@@ -60,22 +62,25 @@ mod duckduckgo_real_tests {
 
         match client.search(request).await {
             Ok(results) => {
-                println!("✅ Definite query search successful - found {} results", results.len());
-                
+                println!(
+                    "✅ Definite query search successful - found {} results",
+                    results.len()
+                );
+
                 // Validate result structure
                 for result in &results {
                     assert!(!result.title.is_empty(), "Title should not be empty");
                     assert!(!result.url.is_empty(), "URL should not be empty");
                     assert!(result.url.starts_with("http"), "URL should be valid");
                 }
-                
+
                 // Log successful results
                 for (i, result) in results.iter().take(3).enumerate() {
                     println!("  {}. {} - {}", i + 1, result.title, result.url);
                 }
             }
             Err(e) => {
-                println!("❌ Definite query search failed: {}", e);
+                println!("❌ Definite query search failed: {e}");
                 let _ = std::fs::write(
                     "/tmp/duckduckgo_definite_query_issue.log",
                     format!("Definite search failed at {}: {}", chrono::Utc::now(), e),
@@ -99,13 +104,16 @@ mod duckduckgo_real_tests {
 
         match client.search_news(request).await {
             Ok(results) => {
-                println!("✅ News search successful - found {} results", results.len());
+                println!(
+                    "✅ News search successful - found {} results",
+                    results.len()
+                );
                 for (i, result) in results.iter().take(2).enumerate() {
                     println!("  {}. {} - {}", i + 1, result.title, result.url);
                 }
             }
             Err(e) => {
-                println!("❌ News search failed: {}", e);
+                println!("❌ News search failed: {e}");
                 let _ = std::fs::write(
                     "/tmp/duckduckgo_news_search_issue.log",
                     format!("News search failed at {}: {}", chrono::Utc::now(), e),
@@ -139,9 +147,13 @@ mod duckduckgo_real_tests {
         match (results1, results2) {
             (Ok(r1), Ok(r2)) => {
                 println!("✅ Cache test successful");
-                println!("  First call: {:?}", duration1);
-                println!("  Second call: {:?}", duration2);
-                assert_eq!(r1.len(), r2.len(), "Cache should return same number of results");
+                println!("  First call: {duration1:?}");
+                println!("  Second call: {duration2:?}");
+                assert_eq!(
+                    r1.len(),
+                    r2.len(),
+                    "Cache should return same number of results"
+                );
             }
             _ => {
                 println!("⚠️  Cache test skipped due to search failures");
@@ -203,16 +215,19 @@ Failed tests will create log files in `/tmp/`:
 
     std::fs::write("/tmp/duckduckgo_integration_report.md", report)
         .expect("Failed to write test report");
-    
-    println!("✅ DuckDuckGo integration test report generated at /tmp/duckduckgo_integration_report.md");
+
+    println!(
+        "✅ DuckDuckGo integration test report generated at /tmp/duckduckgo_integration_report.md"
+    );
 }
 
 /// Simple connectivity test
 #[tokio::test]
 async fn test_duckduckgo_connectivity() {
     let client = reqwest::Client::new();
-    
-    match client.get("https://html.duckduckgo.com/html/?q=test")
+
+    match client
+        .get("https://html.duckduckgo.com/html/?q=test")
         .send()
         .await
     {
@@ -224,7 +239,7 @@ async fn test_duckduckgo_connectivity() {
             }
         }
         Err(e) => {
-            println!("❌ Cannot reach DuckDuckGo: {}", e);
+            println!("❌ Cannot reach DuckDuckGo: {e}");
         }
     }
 }

@@ -60,6 +60,7 @@ impl EnhancedDuckDuckGoClient {
             .timeout(Duration::from_secs(config.request_timeout_seconds))
             .pool_max_idle_per_host(10)
             .pool_idle_timeout(Duration::from_secs(30))
+            // Enable system proxy support (reads HTTP_PROXY, HTTPS_PROXY env vars)
             .build()
             .expect("Failed to build HTTP client");
 
