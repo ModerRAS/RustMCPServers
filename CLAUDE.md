@@ -99,3 +99,6 @@ RUST_LOG=debug cargo run
 # Check specific file compilation
 cargo check --bin duckduckgo-mcp-server
 ```
+
+## 注意事项
+- 根目录下的tmp文件夹是用来放一些参考用的临时文件的，这个文件夹是被gitignore掉的，所以如果你有需要参考的git仓库，或者是需要参考的示例文件之类的你可以clone或者下载到tmp文件夹里，然后用来参考。
