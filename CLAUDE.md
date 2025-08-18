@@ -37,6 +37,8 @@ cargo build --release
 - 开发时如果需要编写全局可用的文档，放在仓库根目录的docs文件夹内
 - 每个Rust项目的开发进度放在对应Rust项目中的CLAUDE.md中，更新进度的时候更新在对应目录的，注意不要改错文件
 - 仓库根目录的CLAUDE.md文件请不要随意更改，如果你需要更改，可以添加到CLAUDE.local.md中
+## 关于MCP服务器的本地测试
+- 可以在Claude Code中测试实用效果，怎么安装参考docs/claude-code-mcp-setup.md
 ## 关于 Github Actions
 - 如果需要新建发布版本用的github actions，可以参考docs/monorepo-release-guide.md
 ## 注意事项
