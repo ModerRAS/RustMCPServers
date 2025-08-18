@@ -15,7 +15,7 @@ tokio = { version = "1.35", features = ["full"] }
 # Web framework
 axum = "0.7"
 tower = "0.4"
-tower-http = { version = "0.5", features = ["trace", "cors", "compression", "timeout", "request-id"] }
+tower-http = { version = "0.5", features = ["trace", "cors", "compression-br", "timeout", "request-id"] }
 
 # Database
 sqlx = { version = "0.7", features = ["runtime-tokio-rustls", "sqlite", "chrono", "uuid", "json", "migrate"] }
@@ -57,6 +57,7 @@ prometheus = "0.13"
 # Testing
 tokio-test = "0.4"
 mockito = "1.2"
+tempfile = "3.8"
 
 [dev-dependencies]
 criterion = "0.5"
@@ -70,9 +71,9 @@ test-utils = []
 name = "task-orchestrator"
 path = "src/main.rs"
 
-[[bin]]
-name = "migrate"
-path = "src/bin/migrate.rs"
+# [[bin]]
+# name = "migrate"
+# path = "src/bin/migrate.rs"
 
 [profile.dev]
 opt-level = 0
