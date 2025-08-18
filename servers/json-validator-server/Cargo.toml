@@ -5,6 +5,7 @@ edition.workspace = true
 authors.workspace = true
 license.workspace = true
 repository.workspace = true
+description = "A Model Context Protocol (MCP) server for JSON validation"
 
 [[bin]]
 name = "json-validator"
@@ -23,3 +24,16 @@ tracing-subscriber = { workspace = true }
 [dev-dependencies]
 tokio-test = { workspace = true }
 tempfile = "3.8"
+
+[package.metadata.deb]
+name = "mcp-json-validator"
+maintainer = "Your Name <your.email@example.com>"
+copyright = "2024, Your Name"
+license-file = ["../../LICENSE", "0"]
+depends = "$auto"
+section = "utils"
+priority = "optional"
+assets = [
+    ["target/release/json-validator", "usr/bin/", "755"],
+    ["README.md", "usr/share/doc/mcp-json-validator/", "644"],
+]

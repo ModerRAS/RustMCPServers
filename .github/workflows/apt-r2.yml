@@ -1,0 +1,29 @@
+name: apt-r2
+
+on:
+  push:
+    tags:
+      - 'mcp-json-validator-v*'   # 匹配 json-validator 的 tag
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      # 1. 打包 deb
+      - run: |
+          cd servers/json-validator-server
+          cargo install cargo-deb
+          cargo deb
+
+      # 2. 上传
+      - uses: unfor19/install-aws-cli-action@v1
+        with:
+          version: 2.22.35   # 兼容 R2 的稳定版
+      - run: |
+          aws configure set region auto
+          aws s3 cp servers/json-validator-server/target/debian/*.deb \
+             s3://${{ secrets.R2_BUCKET_NAME }}/pool/main/ \
+             --endpoint-url https://${{ secrets.R2_ACCOUNT_ID }}.r2.cloudflarestorage.com \
+             --checksum-algorithm CRC32
