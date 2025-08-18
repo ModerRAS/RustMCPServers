@@ -1,0 +1,96 @@
+[package]
+name = "task-orchestrator"
+version = "1.0.0"
+edition = "2021"
+authors = ["System Architect"]
+description = "Task Orchestrator MCP Server - A high-performance task management system"
+license = "MIT"
+repository = "https://github.com/example/task-orchestrator"
+readme = "README.md"
+
+[dependencies]
+# Async runtime
+tokio = { version = "1.35", features = ["full"] }
+
+# Web framework
+axum = "0.7"
+tower = "0.4"
+tower-http = { version = "0.5", features = ["trace", "cors", "compression", "timeout", "request-id"] }
+
+# Database
+sqlx = { version = "0.7", features = ["runtime-tokio-rustls", "sqlite", "chrono", "uuid", "json", "migrate"] }
+
+# Serialization
+serde = { version = "1.0", features = ["derive"] }
+serde_json = "1.0"
+
+# Error handling
+thiserror = "1.0"
+anyhow = "1.0"
+
+# Date and time
+chrono = { version = "0.4", features = ["serde"] }
+uuid = { version = "1.6", features = ["v4", "serde"] }
+
+# Configuration
+config = "0.13"
+
+# Logging and tracing
+tracing = "0.1"
+tracing-subscriber = { version = "0.3", features = ["env-filter", "json"] }
+
+# Validation
+validator = { version = "0.16", features = ["derive"] }
+regex = "1.10"
+
+# Utilities
+derive_more = "0.99"
+strum = { version = "0.25", features = ["derive"] }
+paste = "1.0"
+
+# HTTP client (for external services)
+reqwest = { version = "0.11", features = ["json"] }
+
+# Metrics and monitoring
+prometheus = "0.13"
+
+# Testing
+tokio-test = "0.4"
+mockito = "1.2"
+
+[dev-dependencies]
+criterion = "0.5"
+proptest = "1.4"
+
+[features]
+default = []
+test-utils = []
+
+[[bin]]
+name = "task-orchestrator"
+path = "src/main.rs"
+
+[[bin]]
+name = "migrate"
+path = "src/bin/migrate.rs"
+
+[profile.dev]
+opt-level = 0
+debug = true
+lto = false
+
+[profile.release]
+opt-level = 3
+debug = false
+lto = true
+codegen-units = 1
+panic = "abort"
+
+[profile.test]
+opt-level = 1
+debug = true
+
+[profile.bench]
+opt-level = 3
+debug = false
+lto = true

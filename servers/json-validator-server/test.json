@@ -1,0 +1,6 @@
+{
+  "name": "测试JSON",
+  "age": 25,
+  "email": "test@example.com",
+  "skills": ["Rust", "JavaScript", "Python"]
+}

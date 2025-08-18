@@ -1,0 +1,26 @@
+{
+  "name": "测试JSON",
+  "age": 25,
+  "email": "test@example.com",
+  "skills": ["Rust", "JavaScript", "Python"],
+  "address": {
+    "street": "123 Main St",
+    "city": "Beijing",
+    "country": "China"
+  },
+  "projects": [
+    {
+      "name": "项目1",
+      "description": "这是一个测试项目"
+    },
+    {
+      "name": "项目2",
+      "description": "这是另一个测试项目"
+    }
+  ],
+  "metadata": {
+    "created_at": "2024-01-01T00:00:00Z",
+    "updated_at": "2024-01-02T12:34:56Z",
+    "tags": ["测试", "开发", "Rust"]
+  },
+  "invalid_field": "这里有一个故意的语法错误，缺少闭合大括号

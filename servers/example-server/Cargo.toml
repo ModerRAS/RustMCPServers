@@ -1,0 +1,27 @@
+[package]
+name = "example-server"
+version.workspace = true
+edition.workspace = true
+authors.workspace = true
+license.workspace = true
+repository.workspace = true
+
+[[bin]]
+name = "example-server"
+path = "src/main.rs"
+
+[dependencies]
+# Workspace dependencies
+tokio.workspace = true
+axum.workspace = true
+serde.workspace = true
+serde_json.workspace = true
+tracing.workspace = true
+tracing-subscriber.workspace = true
+uuid.workspace = true
+
+# Local dependencies
+common = { path = "../../crates/common" }
+
+[dev-dependencies]
+tokio-test.workspace = true

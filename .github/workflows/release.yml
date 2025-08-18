@@ -1,0 +1,56 @@
+name: release
+
+on:
+  push:
+    tags:
+      - 'mcp-*-v*'   # 只监听带前缀的 tag
+
+jobs:
+  build:
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        os: [ubuntu-latest, windows-latest, macos-latest]
+        include:
+          - os: ubuntu-latest
+            target: x86_64-unknown-linux-musl
+            bin: json-validator
+          - os: windows-latest
+            target: x86_64-pc-windows-msvc
+            bin: json-validator.exe
+          - os: macos-latest
+            target: aarch64-apple-darwin
+            bin: json-validator
+
+    steps:
+      - uses: actions/checkout@v4
+
+      # 1. 解析 tag 前缀，得到服务器目录
+      - name: parse tag
+        id: vars
+        run: |
+          TAG=${GITHUB_REF#refs/tags/}
+          SERVER=${TAG%%-v*}
+          # 将 mcp-json-validator 转换为 json-validator-server
+          SERVER_DIR=${SERVER#mcp-}
+          SERVER_DIR=${SERVER_DIR%-validator}
+          SERVER_DIR="${SERVER_DIR}-validator-server"
+          echo "server=$SERVER" >> $GITHUB_OUTPUT
+          echo "server_dir=$SERVER_DIR" >> $GITHUB_OUTPUT
+          echo "version=${TAG##*-v}" >> $GITHUB_OUTPUT
+
+      # 2. 只编译对应那一个 bin
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: ${{ matrix.target }}
+      - run: |
+          cd servers/${{ steps.vars.outputs.server_dir }}
+          cargo build --release --bin ${{ matrix.bin }} --target ${{ matrix.target }}
+
+      # 3. 上传 Release（只含单个文件）
+      - name: upload
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ github.ref_name }}
+          files: |
+            servers/${{ steps.vars.outputs.server_dir }}/target/${{ matrix.target }}/release/${{ matrix.bin }}
