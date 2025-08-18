@@ -100,7 +100,14 @@ jobs:
         run: docker build -t duckduckgo-mcp-server .
 
       - name: Run integration tests
-        run: cargo test --test integration_tests -- --nocapture
+        run: |
+          # 运行JSON验证服务器的集成测试
+          cd servers/json-validator-server
+          cargo test --test integration_tests -- --nocapture
+          
+          # 运行任务协调器的集成测试
+          cd ../task-orchestrator
+          cargo test --test integration_tests -- --nocapture
 
       - name: Run Claude Code
         id: claude
