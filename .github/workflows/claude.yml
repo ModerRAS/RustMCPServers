@@ -132,5 +132,5 @@ jobs:
             Ensure all code passes clippy and formatting checks
             
         env:
-          ANTHROPIC_BASE_URL: https://api.moonshot.cn/anthropic/
+          ANTHROPIC_BASE_URL: https://open.bigmodel.cn/api/anthropic/
 
