@@ -53,49 +53,81 @@ jobs:
     strategy:
       matrix:
         os: [ubuntu-latest, windows-latest, macos-latest]
+        server: [json-validator, task-orchestrator]
         include:
+          # JSON Validator Server
           - os: ubuntu-latest
             target: x86_64-unknown-linux-musl
             bin: json-validator
+            server: json-validator
+            server_dir: json-validator-server
           - os: windows-latest
             target: x86_64-pc-windows-msvc
             bin: json-validator.exe
+            server: json-validator
+            server_dir: json-validator-server
           - os: macos-latest
             target: aarch64-apple-darwin
             bin: json-validator
+            server: json-validator
+            server_dir: json-validator-server
+          # Task Orchestrator Server
+          - os: ubuntu-latest
+            target: x86_64-unknown-linux-musl
+            bin: task-orchestrator
+            server: task-orchestrator
+            server_dir: task-orchestrator
+          - os: windows-latest
+            target: x86_64-pc-windows-msvc
+            bin: task-orchestrator.exe
+            server: task-orchestrator
+            server_dir: task-orchestrator
+          - os: macos-latest
+            target: aarch64-apple-darwin
+            bin: task-orchestrator
+            server: task-orchestrator
+            server_dir: task-orchestrator
 
     steps:
       - uses: actions/checkout@v4
 
-      # 1. 解析 tag 前缀，得到服务器目录
+      # 1. 解析 tag 前缀，得到服务器信息
       - name: parse tag
         id: vars
         run: |
           TAG=${GITHUB_REF#refs/tags/}
           SERVER=${TAG%%-v*}
-          # 将 mcp-json-validator 转换为 json-validator-server
-          SERVER_DIR=${SERVER#mcp-}
-          SERVER_DIR=${SERVER_DIR%-validator}
-          SERVER_DIR="${SERVER_DIR}-validator-server"
-          echo "server=$SERVER" >> $GITHUB_OUTPUT
-          echo "server_dir=$SERVER_DIR" >> $GITHUB_OUTPUT
-          echo "version=${TAG##*-v}" >> $GITHUB_OUTPUT
+          VERSION=${TAG##*-v}
+          
+          # 检查是否匹配当前服务器
+          if [[ "$SERVER" == "mcp-${{ matrix.server }}" ]]; then
+            echo "should_build=true" >> $GITHUB_OUTPUT
+            echo "server=$SERVER" >> $GITHUB_OUTPUT
+            echo "server_dir=${{ matrix.server_dir }}" >> $GITHUB_OUTPUT
+            echo "version=$VERSION" >> $GITHUB_OUTPUT
+            echo "bin=${{ matrix.bin }}" >> $GITHUB_OUTPUT
+          else
+            echo "should_build=false" >> $GITHUB_OUTPUT
+          fi
 
-      # 2. 只编译对应那一个 bin
+      # 2. 只编译匹配的服务器
       - uses: dtolnay/rust-toolchain@stable
+        if: steps.vars.outputs.should_build == 'true'
         with:
           targets: ${{ matrix.target }}
       - run: |
           cd servers/${{ steps.vars.outputs.server_dir }}
-          cargo build --release --bin ${{ matrix.bin }} --target ${{ matrix.target }}
+          cargo build --release --bin ${{ steps.vars.outputs.bin }} --target ${{ matrix.target }}
+        if: steps.vars.outputs.should_build == 'true'
 
       # 3. 上传 Release（只含单个文件）
       - name: upload
         uses: softprops/action-gh-release@v2
+        if: steps.vars.outputs.should_build == 'true'
         with:
           tag_name: ${{ github.ref_name }}
           files: |
-            servers/${{ steps.vars.outputs.server_dir }}/target/${{ matrix.target }}/release/${{ matrix.bin }}
+            servers/${{ steps.vars.outputs.server_dir }}/target/${{ matrix.target }}/release/${{ steps.vars.outputs.bin }}
 ```
 
 ## 服务器配置
@@ -132,6 +164,30 @@ path = "src/main.rs"
 
 - `git tag mcp-json-validator-v1.0.0` → 只有 `json-validator-server` 的 CI 触发，Release 里只出现 `json-validator` 二进制
 - `git tag mcp-task-orchestrator-v1.0.0` → 只有 `task-orchestrator` 的 CI 触发，Release 里只出现 `task-orchestrator` 二进制
+
+### 添加新服务器
+
+要添加新的服务器到发布系统，需要：
+
+1. **更新 matrix 配置**：在 `.github/workflows/release.yml` 的 `matrix.server` 中添加新服务器
+2. **添加 include 配置**：为每个平台添加对应的配置条目
+3. **确保服务器目录结构正确**：服务器必须位于 `servers/{server_dir}` 目录下
+4. **配置二进制名称**：确保服务器的 `Cargo.toml` 中定义了正确的 `[[bin]]` 条目
+
+示例：添加 `new-server` 
+```yaml
+matrix:
+  server: [json-validator, task-orchestrator, new-server]
+include:
+  # ... 现有配置 ...
+  # New Server
+  - os: ubuntu-latest
+    target: x86_64-unknown-linux-musl
+    bin: new-server
+    server: new-server
+    server_dir: new-server
+  # ... 其他平台配置 ...
+```
 
 ## 本地测试
 
