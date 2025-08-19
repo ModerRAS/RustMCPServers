@@ -5,9 +5,6 @@ edition = "2021"
 authors = ["RustMCPServers Team"]
 description = "Standalone HTTP JSON validation server"
 
-[workspace]
-
-
 [[bin]]
 name = "json-validator-standalone"
 path = "src/main.rs"
