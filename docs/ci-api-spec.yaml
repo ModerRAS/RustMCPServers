@@ -1,0 +1,761 @@
+openapi: 3.0.0
+info:
+  title: Rust MCP Servers CI/CD API Specification
+  version: 1.0.0
+  description: |
+    GitHub Actions 工作流和构建系统的 API 接口规范。
+    包含工作流触发、构建执行、状态监控、缓存管理等接口。
+
+servers:
+  - url: https://api.github.com
+    description: GitHub API 服务器
+  - url: https://github.com
+    description: GitHub Actions 服务器
+
+paths:
+  # 工作流管理接口
+  /repos/{owner}/{repo}/actions/workflows:
+    get:
+      summary: 获取仓库工作流列表
+      operationId: listWorkflows
+      parameters:
+        - name: owner
+          in: path
+          required: true
+          schema:
+            type: string
+            description: 仓库所有者
+        - name: repo
+          in: path
+          required: true
+          schema:
+            type: string
+            description: 仓库名称
+        - name: per_page
+          in: query
+          schema:
+            type: integer
+            default: 30
+            description: 每页数量
+        - name: page
+          in: query
+          schema:
+            type: integer
+            default: 1
+            description: 页码
+      responses:
+        '200':
+          description: 成功响应
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  total_count:
+                    type: integer
+                    description: 总工作流数量
+                  workflows:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/Workflow'
+
+  /repos/{owner}/{repo}/actions/workflows/{workflow_id}/runs:
+    get:
+      summary: 获取工作流运行记录
+      operationId: listWorkflowRuns
+      parameters:
+        - name: owner
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: repo
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: workflow_id
+          in: path
+          required: true
+          schema:
+            type: string
+            description: 工作流ID或文件名
+        - name: status
+          in: query
+          schema:
+            type: string
+            enum: [queued, in_progress, completed, action_required, cancelled, failure, neutral, skipped, stale, success, timed_out, waiting]
+            description: 运行状态过滤
+        - name: branch
+          in: query
+          schema:
+            type: string
+            description: 分支过滤
+      responses:
+        '200':
+          description: 成功响应
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  total_count:
+                    type: integer
+                  workflow_runs:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/WorkflowRun'
+
+  # 构建执行接口
+  /repos/{owner}/{repo}/actions/workflows/{workflow_id}/dispatches:
+    post:
+      summary: 手动触发工作流
+      operationId: dispatchWorkflow
+      parameters:
+        - name: owner
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: repo
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: workflow_id
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                ref:
+                  type: string
+                  description: 触发分支或标签
+                  example: main
+                inputs:
+                  type: object
+                  description: 工作流输入参数
+                  properties:
+                    build_type:
+                      type: string
+                      enum: [full, incremental, test]
+                      description: 构建类型
+                    skip_tests:
+                      type: boolean
+                      description: 是否跳过测试
+                    cache_key:
+                      type: string
+                      description: 自定义缓存键
+      responses:
+        '204':
+          description: 触发成功
+
+  # 缓存管理接口
+  /repos/{owner}/{repo}/actions/caches:
+    get:
+      summary: 获取构建缓存列表
+      operationId: listCaches
+      parameters:
+        - name: owner
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: repo
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: key:
+          in: query
+          schema:
+            type: string
+            description: 缓存键过滤
+        - name: ref:
+          in: query
+          schema:
+            type: string
+            description: 引用过滤
+      responses:
+        '200':
+          description: 成功响应
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  total_count:
+                    type: integer
+                  actions_caches:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/Cache'
+
+  /repos/{owner}/{repo}/actions/caches/{cache_id}:
+    delete:
+      summary: 删除缓存
+      operationId: deleteCache
+      parameters:
+        - name: owner
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: repo
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: cache_id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '204':
+          description: 删除成功
+
+  # 构建状态监控接口
+  /repos/{owner}/{repo}/actions/runs/{run_id}:
+    get:
+      summary: 获取构建运行详情
+      operationId: getWorkflowRun
+      parameters:
+        - name: owner
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: repo
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: run_id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: 成功响应
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/WorkflowRunDetail'
+
+  /repos/{owner}/{repo}/actions/runs/{run_id}/jobs:
+    get:
+      summary: 获取运行中的任务
+      operationId: listRunJobs
+      parameters:
+        - name: owner
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: repo
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: run_id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: 成功响应
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  total_count:
+                    type: integer
+                  jobs:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/Job'
+
+  # 构建脚本接口
+  /scripts/build:
+    post:
+      summary: 执行构建脚本
+      operationId: executeBuildScript
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                project_path:
+                  type: string
+                  description: 项目路径
+                  example: servers/task-orchestrator
+                build_type:
+                  type: string
+                  enum: [debug, release]
+                  description: 构建类型
+                features:
+                  type: array
+                  items:
+                    type: string
+                  description: 启用的特性
+                skip_tests:
+                  type: boolean
+                  description: 是否跳过测试
+                cache_key:
+                  type: string
+                  description: 缓存键
+      responses:
+        '200':
+          description: 构建结果
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BuildResult'
+
+  /scripts/test:
+    post:
+      summary: 执行测试脚本
+      operationId: executeTestScript
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                test_type:
+                  type: string
+                  enum: [unit, integration, e2e, benchmark]
+                  description: 测试类型
+                test_path:
+                  type: string
+                  description: 测试路径
+                test_filter:
+                  type: string
+                  description: 测试过滤器
+                parallel:
+                  type: boolean
+                  description: 是否并行执行
+      responses:
+        '200':
+          description: 测试结果
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TestResult'
+
+  # 监控和告警接口
+  /monitoring/metrics:
+    get:
+      summary: 获取构建指标
+      operationId: getBuildMetrics
+      parameters:
+        - name: time_range
+          in: query
+          schema:
+            type: string
+            enum: [1h, 24h, 7d, 30d]
+            default: 24h
+            description: 时间范围
+        - name: metric_type
+          in: query
+          schema:
+            type: string
+            enum: [build_time, success_rate, cache_hit_rate, test_coverage]
+            description: 指标类型
+      responses:
+        '200':
+          description: 指标数据
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Metrics'
+
+  /monitoring/alerts:
+    get:
+      summary: 获取告警列表
+      operationId: getAlerts
+      parameters:
+        - name: status
+          in: query
+          schema:
+            type: string
+            enum: [active, resolved, suppressed]
+            description: 告警状态
+        - name: severity
+          in: query
+          schema:
+            type: string
+            enum: [critical, warning, info]
+            description: 告警级别
+      responses:
+        '200':
+          description: 告警列表
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  alerts:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/Alert'
+
+  /monitoring/alerts/{alert_id}/acknowledge:
+    post:
+      summary: 确认告警
+      operationId: acknowledgeAlert
+      parameters:
+        - name: alert_id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: 确认成功
+
+components:
+  schemas:
+    # 工作流相关
+    Workflow:
+      type: object
+      properties:
+        id:
+          type: integer
+        name:
+          type: string
+        path:
+          type: string
+        state:
+          type: string
+          enum: [active, deleted, disabled_fork]
+        created_at:
+          type: string
+          format: date-time
+        updated_at:
+          type: string
+          format: date-time
+        url:
+          type: string
+        html_url:
+          type: string
+        badge_url:
+          type: string
+
+    WorkflowRun:
+      type: object
+      properties:
+        id:
+          type: integer
+        name:
+          type: string
+        head_branch:
+          type: string
+        head_sha:
+          type: string
+        run_number:
+          type: integer
+        event:
+          type: string
+          enum: [push, pull_request, workflow_dispatch, schedule]
+        status:
+          type: string
+          enum: [queued, in_progress, completed, action_required, cancelled, failure, neutral, skipped, stale, success, timed_out, waiting]
+        conclusion:
+          type: string
+          enum: [success, failure, neutral, cancelled, skipped, timed_out, action_required]
+        workflow_id:
+          type: integer
+        created_at:
+          type: string
+          format: date-time
+        updated_at:
+          type: string
+          format: date-time
+        url:
+          type: string
+        html_url:
+          type: string
+
+    WorkflowRunDetail:
+      allOf:
+        - $ref: '#/components/schemas/WorkflowRun'
+        - type: object
+          properties:
+            jobs:
+              type: array
+              items:
+                $ref: '#/components/schemas/Job'
+            artifacts:
+              type: array
+              items:
+                $ref: '#/components/schemas/Artifact'
+
+    Job:
+      type: object
+      properties:
+        id:
+          type: integer
+        run_id:
+          type: integer
+        name:
+          type: string
+        status:
+          type: string
+          enum: [queued, in_progress, completed, waiting]
+        conclusion:
+          type: string
+          enum: [success, failure, neutral, cancelled, skipped, timed_out]
+        started_at:
+          type: string
+          format: date-time
+        completed_at:
+          type: string
+          format: date-time
+        steps:
+          type: array
+          items:
+            $ref: '#/components/schemas/Step'
+
+    Step:
+      type: object
+      properties:
+        name:
+          type: string
+        status:
+          type: string
+          enum: [queued, in_progress, completed, waiting]
+        conclusion:
+          type: string
+          enum: [success, failure, neutral, cancelled, skipped, timed_out]
+        number:
+          type: integer
+        started_at:
+          type: string
+          format: date-time
+        completed_at:
+          type: string
+          format: date-time
+
+    Artifact:
+      type: object
+      properties:
+        id:
+          type: integer
+        name:
+          type: string
+        size_in_bytes:
+          type: integer
+        archive_download_url:
+          type: string
+        created_at:
+          type: string
+          format: date-time
+        expires_at:
+          type: string
+          format: date-time
+
+    # 缓存相关
+    Cache:
+      type: object
+      properties:
+        id:
+          type: integer
+        ref:
+          type: string
+        key:
+          type: string
+        version:
+          type: string
+        last_accessed_at:
+          type: string
+          format: date-time
+        created_at:
+          type: string
+          format: date-time
+        size_in_bytes:
+          type: integer
+
+    # 构建结果相关
+    BuildResult:
+      type: object
+      properties:
+        success:
+          type: boolean
+        build_time:
+          type: number
+          description: 构建耗时(秒)
+        artifacts:
+          type: array
+          items:
+            $ref: '#/components/schemas/BuildArtifact'
+        logs:
+          type: array
+          items:
+            type: string
+        cache_status:
+          type: string
+          enum: [hit, miss, partial]
+        warnings:
+          type: array
+          items:
+            type: string
+
+    BuildArtifact:
+      type: object
+      properties:
+        name:
+          type: string
+        path:
+          type: string
+        size:
+          type: integer
+        checksum:
+          type: string
+
+    # 测试结果相关
+    TestResult:
+      type: object
+      properties:
+        success:
+          type: boolean
+        total_tests:
+          type: integer
+        passed_tests:
+          type: integer
+        failed_tests:
+          type: integer
+        skipped_tests:
+          type: integer
+        test_time:
+          type: number
+          description: 测试耗时(秒)
+        coverage:
+          type: number
+          description: 测试覆盖率
+        failed_tests_list:
+          type: array
+          items:
+            $ref: '#/components/schemas/FailedTest'
+
+    FailedTest:
+      type: object
+      properties:
+        name:
+          type: string
+        reason:
+          type: string
+        file:
+          type: string
+        line:
+          type: integer
+
+    # 监控指标相关
+    Metrics:
+      type: object
+      properties:
+        metric_type:
+          type: string
+        time_range:
+          type: string
+        data_points:
+          type: array
+          items:
+            $ref: '#/components/schemas/DataPoint'
+        summary:
+          $ref: '#/components/schemas/MetricSummary'
+
+    DataPoint:
+      type: object
+      properties:
+        timestamp:
+          type: string
+          format: date-time
+        value:
+          type: number
+        tags:
+          type: object
+          additionalProperties:
+            type: string
+
+    MetricSummary:
+      type: object
+      properties:
+        min:
+          type: number
+        max:
+          type: number
+        avg:
+          type: number
+        p95:
+          type: number
+        p99:
+          type: number
+
+    # 告警相关
+    Alert:
+      type: object
+      properties:
+        id:
+          type: string
+        name:
+          type: string
+        description:
+          type: string
+        severity:
+          type: string
+          enum: [critical, warning, info]
+        status:
+          type: string
+          enum: [active, resolved, suppressed]
+        created_at:
+          type: string
+          format: date-time
+        updated_at:
+          type: string
+          format: date-time
+        acknowledged_at:
+          type: string
+          format: date-time
+        resolved_at:
+          type: string
+          format: date-time
+        tags:
+          type: object
+          additionalProperties:
+            type: string
+
+security:
+  - bearerAuth: []
+
+securitySchemes:
+  bearerAuth:
+    type: http
+    scheme: bearer
+    bearerFormat: JWT
+    description: GitHub Personal Access Token
+
+tags:
+  - name: Workflows
+    description: 工作流管理
+  - name: Builds
+    description: 构建执行
+  - name: Cache
+    description: 缓存管理
+  - name: Monitoring
+    description: 监控和告警
+  - name: Scripts
+    description: 构建脚本

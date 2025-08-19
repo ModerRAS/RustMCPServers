@@ -1,7 +1,7 @@
 [workspace]
 resolver = "2"
 members = [
-    "servers/json-validator-server", "servers/task-orchestrator",
+    "servers/json-validator-server", "servers/task-orchestrator", "servers/task-orchestrator-mcp",
     "tests",
 ]
 exclude = [
@@ -45,9 +45,17 @@ tracing-subscriber = { version = "0.3", features = ["env-filter"] }
 uuid = { version = "1.0", features = ["v4", "serde"] }
 chrono = { version = "0.4", features = ["serde"] }
 url = "2.5"
+schemars = { version = "0.8", features = ["derive"] }
 
 # MCP protocol
-rmcp = { version = "0.5", features = ["transport-io", "transport-child-process", "macros"] }
+rmcp = { version = "0.5", features = [
+    "transport-io", 
+    "transport-child-process", 
+    "transport-streamable-http-server",
+    "transport-streamable-http-server-session",
+    "transport-worker",
+    "macros"
+] }
 
 # Configuration
 dotenvy = "0.15"

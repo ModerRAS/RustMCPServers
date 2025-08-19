@@ -1,0 +1,38 @@
+{
+  "workflow_path": ".github/workflows/security-scan.yml",
+  "vulnerabilities": [
+    {
+      "id": "missing_permissions",
+      "title": "Missing Permissions Configuration",
+      "description": "Workflow does not explicitly define permissions",
+      "severity": "Medium",
+      "category": "Permission Configuration",
+      "location": "workflow file",
+      "recommendation": "Explicitly set permissions to follow principle of least privilege",
+      "detected_at": "2025-08-19T09:33:42.450237070Z"
+    }
+  ],
+  "recommendations": [
+    "Review and minimize workflow permissions using principle of least privilege",
+    "Update GitHub Actions to latest stable versions",
+    "Validate and sanitize all user inputs used in shell commands",
+    "Use HTTPS URLs for all external network requests",
+    "Review and replace unsafe operations with safer alternatives",
+    "Update runtime versions to latest stable versions with security patches"
+  ],
+  "score": 95,
+  "is_secure": true,
+  "scan_duration": {
+    "secs": 0,
+    "nanos": 1276443
+  },
+  "metadata": {
+    "severity_critical": 0,
+    "total_vulnerabilities": 1,
+    "scan_timestamp": "2025-08-19T09:33:42.450237070+00:00",
+    "severity_high": 0,
+    "severity_low": 0,
+    "severity_medium": 1,
+    "severity_info": 0
+  }
+}

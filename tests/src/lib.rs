@@ -1,15 +1,27 @@
+pub mod simple_tests;
 pub mod workflow_validator;
 pub mod workflow_executor;
 pub mod performance_tester;
 pub mod security_tester;
+pub mod coverage_reporter;
+pub mod comprehensive_reporter;
+pub mod unit;
+pub mod integration;
+pub mod e2e;
 
+pub use simple_tests::*;
 pub use workflow_validator::*;
 pub use workflow_executor::*;
 pub use performance_tester::*;
 pub use security_tester::*;
+pub use coverage_reporter::*;
+pub use comprehensive_reporter::*;
+pub use unit::*;
+pub use integration::*;
+pub use e2e::*;
 
 /// 测试结果汇总
-#[derive(Debug, serde::Serialize, serde::Deserialize)]
+#[derive(Debug, Clone, serde::Serialize, serde::Deserialize)]
 pub struct TestSuiteResult {
     pub suite_name: String,
     pub total_tests: usize,
@@ -19,7 +31,7 @@ pub struct TestSuiteResult {
     pub test_results: Vec<TestCaseResult>,
 }
 
-#[derive(Debug, serde::Serialize, serde::Deserialize)]
+#[derive(Debug, Clone, serde::Serialize, serde::Deserialize)]
 pub struct TestCaseResult {
     pub name: String,
     pub status: TestStatus,
@@ -28,7 +40,7 @@ pub struct TestCaseResult {
     pub output: Option<String>,
 }
 
-#[derive(Debug, serde::Serialize, serde::Deserialize, PartialEq)]
+#[derive(Debug, Clone, serde::Serialize, serde::Deserialize, PartialEq)]
 pub enum TestStatus {
     Passed,
     Failed,

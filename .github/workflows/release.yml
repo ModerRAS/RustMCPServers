@@ -1,190 +1,215 @@
-name: Release MCP Servers
+name: Release
 
 on:
   push:
     tags:
-      - 'mcp-*-v*'   # 监听格式为 mcp-server-name-version 的 tag
+      - 'v*'
+  workflow_dispatch:
+    inputs:
+      version:
+        description: 'Version to release'
+        required: true
+        default: 'latest'
+      dry_run:
+        description: 'Dry run (no actual release)'
+        type: boolean
+        default: false
+
+env:
+  CARGO_TERM_COLOR: always
 
 jobs:
-  # 解析 tag 并确定要构建的服务器
-  parse-tag:
-    runs-on: ubuntu-latest
-    outputs:
-      server_name: ${{ steps.parse.outputs.server_name }}
-      server_dir: ${{ steps.parse.outputs.server_dir }}
-      binary_name: ${{ steps.parse.outputs.binary_name }}
-      version: ${{ steps.parse.outputs.version }}
-      should_build: ${{ steps.parse.outputs.should_build }}
-      
-    steps:
-      - uses: actions/checkout@v4
-      
-      - name: Parse tag and determine server
-        id: parse
-        run: |
-          TAG=${GITHUB_REF#refs/tags/}
-          echo "Tag: $TAG"
-          
-          # 解析 tag 格式: mcp-server-name-version
-          if [[ "$TAG" =~ ^mcp-(.+)-v([0-9]+\.[0-9]+\.[0-9]+)$ ]]; then
-            SERVER_NAME="${BASH_REMATCH[1]}"
-            VERSION="${BASH_REMATCH[2]}"
-            
-            echo "Server name: $SERVER_NAME"
-            echo "Version: $VERSION"
-            
-            # 根据服务器名称设置构建参数
-            case "$SERVER_NAME" in
-              "json-validator")
-                echo "server_dir=json-validator-server" >> $GITHUB_OUTPUT
-                echo "binary_name=json-validator" >> $GITHUB_OUTPUT
-                echo "should_build=true" >> $GITHUB_OUTPUT
-                ;;
-              "task-orchestrator")
-                echo "server_dir=task-orchestrator" >> $GITHUB_OUTPUT
-                echo "binary_name=task-orchestrator" >> $GITHUB_OUTPUT
-                echo "should_build=true" >> $GITHUB_OUTPUT
-                ;;
-              *)
-                echo "Unknown server: $SERVER_NAME"
-                echo "should_build=false" >> $GITHUB_OUTPUT
-                ;;
-            esac
-            
-            echo "server_name=$SERVER_NAME" >> $GITHUB_OUTPUT
-            echo "version=$VERSION" >> $GITHUB_OUTPUT
-          else
-            echo "Invalid tag format: $TAG"
-            echo "should_build=false" >> $GITHUB_OUTPUT
-          fi
-
-  # 构建对应的服务器
   build:
-    needs: parse-tag
-    if: needs.parse-tag.outputs.should_build == 'true'
+    name: Build
     runs-on: ${{ matrix.os }}
+    timeout-minutes: 45
     strategy:
       matrix:
-        include:
-          - os: ubuntu-latest
-            target: x86_64-unknown-linux-gnu
-            binary_suffix: ""
-            asset_name: ${{ needs.parse-tag.outputs.binary_name }}-linux-x86_64
+        os: [ubuntu-latest, windows-latest, macos-latest]
+        target: [x86_64, aarch64]
+        exclude:
           - os: windows-latest
-            target: x86_64-pc-windows-msvc
-            binary_suffix: ".exe"
-            asset_name: ${{ needs.parse-tag.outputs.binary_name }}-windows-x86_64.exe
+            target: aarch64
           - os: macos-latest
-            target: x86_64-apple-darwin
-            binary_suffix: ""
-            asset_name: ${{ needs.parse-tag.outputs.binary_name }}-macos-x86_64
-          - os: macos-latest
-            target: aarch64-apple-darwin
-            binary_suffix: ""
-            asset_name: ${{ needs.parse-tag.outputs.binary_name }}-macos-arm64
-
-    steps:
-      - uses: actions/checkout@v4
-
-      - name: Setup Rust
-        uses: dtolnay/rust-toolchain@stable
-        with:
-          targets: ${{ matrix.target }}
-
-      - name: Cache cargo registry
-        uses: actions/cache@v4
-        with:
-          path: |
-            ~/.cargo/registry
-            ~/.cargo/git
-            target
-          key: ${{ runner.os }}-cargo-${{ hashFiles('**/Cargo.lock') }}
-
-      - name: Build for ${{ matrix.os }}
-        run: |
-          cd servers/${{ needs.parse-tag.outputs.server_dir }}
-          cargo build --release --bin ${{ needs.parse-tag.outputs.binary_name }} --target ${{ matrix.target }}
-          
-          # 重命名二进制文件以便发布
-          if [ "${{ matrix.os }}" = "windows-latest" ]; then
-            mv target/${{ matrix.target }}/release/${{ needs.parse-tag.outputs.binary_name }}${{ matrix.binary_suffix }} ../${{ matrix.asset_name }}
-          else
-            mv target/${{ matrix.target }}/release/${{ needs.parse-tag.outputs.binary_name }} ../${{ matrix.asset_name }}
-            chmod +x ../${{ matrix.asset_name }}
-          fi
-
-      - name: Upload artifact
-        uses: actions/upload-artifact@v4
-        with:
-          name: ${{ matrix.asset_name }}
-          path: ${{ matrix.asset_name }}
-
-  # 创建 Release
-  release:
-    needs: [parse-tag, build]
-    if: needs.parse-tag.outputs.should_build == 'true'
-    runs-on: ubuntu-latest
+            target: aarch64
     
     steps:
-      - uses: actions/checkout@v4
+    - uses: actions/checkout@v4
+    
+    - name: Install Rust
+      uses: dtolnay/rust-toolchain@stable
+      with:
+        components: clippy, rustfmt
+    
+    - name: Cache cargo registry
+      uses: actions/cache@v3
+      with:
+        path: |
+          ~/.cargo/registry
+          ~/.cargo/git
+          target
+        key: ${{ runner.os }}-cargo-release-${{ matrix.target }}-${{ hashFiles('**/Cargo.lock') }}
+        restore-keys: |
+          ${{ runner.os }}-cargo-release-${{ matrix.target }}-
+          ${{ runner.os }}-cargo-
+          ${{ runner.os }}-
+    
+    - name: Add target
+      if: matrix.target != 'x86_64'
+      run: rustup target add ${{ matrix.target }}-unknown-linux-gnu
+    
+    - name: Build
+      run: |
+        if [ "${{ matrix.target }}" = "x86_64" ]; then
+          cargo build --all --release --verbose
+        else
+          cargo build --all --release --target ${{ matrix.target }}-unknown-linux-gnu --verbose
+        fi
+    
+    - name: Upload artifacts
+      uses: actions/upload-artifact@v3
+      with:
+        name: binaries-${{ matrix.os }}-${{ matrix.target }}
+        path: |
+          target/release/task-orchestrator
+          target/release/task-orchestrator.exe
+          target/**/release/task-orchestrator
 
-      - name: Download all artifacts
-        uses: actions/download-artifact@v4
-        with:
-          path: artifacts
+  test:
+    name: Test
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    needs: build
+    
+    steps:
+    - uses: actions/checkout@v4
+    
+    - name: Install Rust
+      uses: dtolnay/rust-toolchain@stable
+      with:
+        components: clippy, rustfmt
+    
+    - name: Cache cargo registry
+      uses: actions/cache@v3
+      with:
+        path: |
+          ~/.cargo/registry
+          ~/.cargo/git
+          target
+        key: ${{ runner.os }}-cargo-release-test-${{ hashFiles('**/Cargo.lock') }}
+        restore-keys: |
+          ${{ runner.os }}-cargo-release-test-
+          ${{ runner.os }}-cargo-
+          ${{ runner.os }}-
+    
+    - name: Run tests
+      run: cargo test --all --verbose
+    
+    - name: Run integration tests
+      run: cargo test --all --test integration --verbose
 
-      - name: Create Release
-        uses: softprops/action-gh-release@v2
-        with:
-          tag_name: ${{ github.ref_name }}
-          name: "${{ needs.parse-tag.outputs.server_name }} v${{ needs.parse-tag.outputs.version }}"
-          body: |
-            ## ${{ needs.parse-tag.outputs.server_name }} v${{ needs.parse-tag.outputs.version }}
-            
-            This is an automated release for the ${{ needs.parse-tag.outputs.server_name }} MCP server.
-            
-            ### Downloads
-            
-            | Platform | File |
-            |----------|------|
-            | Linux (x86_64) | `${{ needs.parse-tag.outputs.binary_name }}-linux-x86_64` |
-            | Windows (x86_64) | `${{ needs.parse-tag.outputs.binary_name }}-windows-x86_64.exe` |
-            | macOS (Intel) | `${{ needs.parse-tag.outputs.binary_name }}-macos-x86_64` |
-            | macOS (Apple Silicon) | `${{ needs.parse-tag.outputs.binary_name }}-macos-arm64` |
-            
-            ### Installation
-            
-            #### Linux/macOS
-            ```bash
-            chmod +x ${{ needs.parse-tag.outputs.binary_name }}-*
-            sudo mv ${{ needs.parse-tag.outputs.binary_name }}-* /usr/local/bin/${{ needs.parse-tag.outputs.binary_name }}
-            ```
-            
-            #### Windows
-            ```powershell
-            # Download and use directly, or add to PATH
-            ```
-            
-            ### Usage
-            
-            Add to your MCP client configuration:
-            ```json
-            {
-              "mcpServers": {
-                "${{ needs.parse-tag.outputs.server_name }}": {
-                  "command": "/path/to/${{ needs.parse-tag.outputs.binary_name }}",
-                  "args": []
-                }
-              }
-            }
-            ```
-          files: |
-            artifacts/${{ needs.parse-tag.outputs.binary_name }}-linux-x86_64/${{ needs.parse-tag.outputs.binary_name }}-linux-x86_64
-            artifacts/${{ needs.parse-tag.outputs.binary_name }}-windows-x86_64.exe/${{ needs.parse-tag.outputs.binary_name }}-windows-x86_64.exe
-            artifacts/${{ needs.parse-tag.outputs.binary_name }}-macos-x86_64/${{ needs.parse-tag.outputs.binary_name }}-macos-x86_64
-            artifacts/${{ needs.parse-tag.outputs.binary_name }}-macos-arm64/${{ needs.parse-tag.outputs.binary_name }}-macos-arm64
-          draft: false
-          prerelease: false
-          generate_release_notes: true
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+  security:
+    name: Security audit
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    needs: build
+    
+    steps:
+    - uses: actions/checkout@v4
+    
+    - name: Install Rust
+      uses: dtolnay/rust-toolchain@stable
+    
+    - name: Cache cargo registry
+      uses: actions/cache@v3
+      with:
+        path: |
+          ~/.cargo/registry
+          ~/.cargo/git
+        key: ${{ runner.os }}-cargo-audit-${{ hashFiles('**/Cargo.lock') }}
+        restore-keys: |
+          ${{ runner.os }}-cargo-audit-
+          ${{ runner.os }}-
+    
+    - name: Install cargo-audit
+      run: cargo install cargo-audit --locked
+    
+    - name: Run security audit
+      run: cargo audit --deny warnings
+
+  publish:
+    name: Publish
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    needs: [build, test, security]
+    if: github.event_name == 'push' && startsWith(github.ref, 'refs/tags/v') && !github.event.inputs.dry_run
+    
+    steps:
+    - uses: actions/checkout@v4
+    
+    - name: Install Rust
+      uses: dtolnay/rust-toolchain@stable
+    
+    - name: Cache cargo registry
+      uses: actions/cache@v3
+      with:
+        path: |
+          ~/.cargo/registry
+          ~/.cargo/git
+          target
+        key: ${{ runner.os }}-cargo-publish-${{ hashFiles('**/Cargo.lock') }}
+        restore-keys: |
+          ${{ runner.os }}-cargo-publish-
+          ${{ runner.os }}-cargo-
+          ${{ runner.os }}-
+    
+    - name: Download artifacts
+      uses: actions/download-artifact@v3
+    
+    - name: Create release
+      uses: softprops/action-gh-release@v1
+      with:
+        files: |
+          binaries-*/task-orchestrator
+          binaries-*/task-orchestrator.exe
+        draft: false
+        prerelease: contains(github.ref, 'alpha') || contains(github.ref, 'beta')
+        generate_release_notes: true
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+    
+    - name: Publish to crates.io
+      run: |
+        cargo login ${{ secrets.CARGO_REGISTRY_TOKEN }}
+        cargo publish --all
+      if: "!contains(github.ref, 'alpha') && !contains(github.ref, 'beta')"
+
+  docker:
+    name: Docker
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    needs: [build, test, security]
+    
+    steps:
+    - uses: actions/checkout@v4
+    
+    - name: Set up Docker Buildx
+      uses: docker/setup-buildx-action@v3
+    
+    - name: Login to Docker Hub
+      uses: docker/login-action@v3
+      with:
+        username: ${{ secrets.DOCKER_USERNAME }}
+        password: ${{ secrets.DOCKER_PASSWORD }}
+    
+    - name: Build and push
+      uses: docker/build-push-action@v5
+      with:
+        context: .
+        platforms: linux/amd64,linux/arm64
+        push: true
+        tags: |
+          ${{ secrets.DOCKER_USERNAME }}/task-orchestrator:latest
+          ${{ secrets.DOCKER_USERNAME }}/task-orchestrator:${{ github.ref_name }}
+        cache-from: type=gha
+        cache-to: type=gha,mode=max

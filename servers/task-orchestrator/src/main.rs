@@ -31,7 +31,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
     let logger = log_manager.structured_logger();
 
     logger.log_info("Starting Task Orchestrator MCP Server", None);
-    logger.log_info(&format!("Environment: {}", config.environment), None);
+    logger.log_info(&format!("Environment: {:?}", config.environment), None);
     logger.log_info(&format!("Version: {}", config.version), None);
 
     // 创建数据库连接池
@@ -48,7 +48,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
 
     // 创建锁管理器
     let lock_manager = Arc::new(
-        SqliteLockManager::with_pool(pool.clone()).await
+        SqliteLockManager::with_pool(pool.clone())
     );
 
     // 创建并发控制器
@@ -61,7 +61,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
 
     // 创建速率限制器
     let rate_limiter = RateLimiter::new(
-        config.security.rate_limit_requests_per_minute,
+        config.security.rate_limit_requests_per_minute as usize,
         std::time::Duration::from_secs(60),
     );
 
@@ -95,7 +95,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
     // 创建API状态
     let api_state = ApiState {
         task_service: task_service.clone(),
-        logger: logger.clone(),
+        logger: Arc::new(logger.clone()),
     };
 
     // 启动后台任务
@@ -171,33 +171,6 @@ async fn main() -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
     Ok(())
 }
 
-
-impl StructuredLogger {
-    pub fn log_info(&self, message: &str, context: Option<&str>) {
-        if let Some(ctx) = context {
-            tracing::info!(message = %message, context = %ctx);
-        } else {
-            tracing::info!(message = %message);
-        }
-    }
-
-    pub fn log_warn(&self, message: &str, context: Option<&str>) {
-        if let Some(ctx) = context {
-            tracing::warn!(message = %message, context = %ctx);
-        } else {
-            tracing::warn!(message = %message);
-        }
-    }
-
-    pub fn log_error(&self, message: &str, context: Option<&str>) {
-        if let Some(ctx) = context {
-            tracing::error!(message = %message, context = %ctx);
-        } else {
-            tracing::error!(message = %message);
-        }
-    }
-}
-
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -215,7 +188,7 @@ mod tests {
     #[tokio::test]
     async fn test_logging_initialization() {
         let config = AppConfig::from_env().unwrap();
-        let log_manager = LogManager::new(config.logging);
+        let mut log_manager = LogManager::new(config.logging);
         let result = log_manager.init();
         assert!(result.is_ok());
     }
