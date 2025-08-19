@@ -1,0 +1,82 @@
+name: release
+
+on:
+  push:
+    tags:
+      - 'mcp-*-v*'
+
+jobs:
+  build:
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        os: [ubuntu-latest, windows-latest, macos-latest]
+        server: [json-validator, task-orchestrator]
+        include:
+          - os: ubuntu-latest
+            target: x86_64-unknown-linux-musl
+            bin: json-validator
+            server: json-validator
+            server_dir: json-validator-server
+          - os: windows-latest
+            target: x86_64-pc-windows-msvc
+            bin: json-validator.exe
+            server: json-validator
+            server_dir: json-validator-server
+          - os: macos-latest
+            target: aarch64-apple-darwin
+            bin: json-validator
+            server: json-validator
+            server_dir: json-validator-server
+          - os: ubuntu-latest
+            target: x86_64-unknown-linux-musl
+            bin: task-orchestrator
+            server: task-orchestrator
+            server_dir: task-orchestrator
+          - os: windows-latest
+            target: x86_64-pc-windows-msvc
+            bin: task-orchestrator.exe
+            server: task-orchestrator
+            server_dir: task-orchestrator
+          - os: macos-latest
+            target: aarch64-apple-darwin
+            bin: task-orchestrator
+            server: task-orchestrator
+            server_dir: task-orchestrator
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: parse tag
+        id: vars
+        run: |
+          TAG=${GITHUB_REF#refs/tags/}
+          SERVER=${TAG%%-v*}
+          VERSION=${TAG##*-v}
+          
+          if [[ "$SERVER" == "mcp-${{ matrix.server }}" ]]; then
+            echo "should_build=true" >> $GITHUB_OUTPUT
+            echo "server=$SERVER" >> $GITHUB_OUTPUT
+            echo "server_dir=${{ matrix.server_dir }}" >> $GITHUB_OUTPUT
+            echo "version=$VERSION" >> $GITHUB_OUTPUT
+            echo "bin=${{ matrix.bin }}" >> $GITHUB_OUTPUT
+          else
+            echo "should_build=false" >> $GITHUB_OUTPUT
+          fi
+
+      - uses: dtolnay/rust-toolchain@stable
+        if: steps.vars.outputs.should_build == 'true'
+        with:
+          targets: ${{ matrix.target }}
+      - run: |
+          cd servers/${{ steps.vars.outputs.server_dir }}
+          cargo build --release --bin ${{ steps.vars.outputs.bin }} --target ${{ matrix.target }}
+        if: steps.vars.outputs.should_build == 'true'
+
+      - name: upload
+        uses: softprops/action-gh-release@v2
+        if: steps.vars.outputs.should_build == 'true'
+        with:
+          tag_name: ${{ github.ref_name }}
+          files: |
+            servers/${{ steps.vars.outputs.server_dir }}/target/${{ matrix.target }}/release/${{ steps.vars.outputs.bin }}

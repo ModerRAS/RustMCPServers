@@ -1,0 +1,59 @@
+{
+  "workflow_path": "demo_workflow.yml",
+  "vulnerabilities": [
+    {
+      "id": "secret_leak_3",
+      "title": "Hardcoded Secret Detected",
+      "description": "Potential hardcoded secret found in workflow file",
+      "severity": "Critical",
+      "category": "Secret Leak",
+      "location": "Line 4: api_key: 'sk-1234567890abcdef1234567890abcdef'",
+      "recommendation": "Use GitHub Secrets or environment variables instead of hardcoded values",
+      "detected_at": "2025-08-18T17:10:58.006865358Z"
+    },
+    {
+      "id": "missing_permissions",
+      "title": "Missing Permissions Configuration",
+      "description": "Workflow does not explicitly define permissions",
+      "severity": "Medium",
+      "category": "Permission Configuration",
+      "location": "workflow file",
+      "recommendation": "Explicitly set permissions to follow principle of least privilege",
+      "detected_at": "2025-08-18T17:10:58.006865358Z"
+    },
+    {
+      "id": "unsafe_operation_10",
+      "title": "Unsafe Operation Detected",
+      "description": "Potentially unsafe operation found in workflow",
+      "severity": "Medium",
+      "category": "Unsafe Operations",
+      "location": "Line 11: - run: sudo apt-get update",
+      "recommendation": "Review and replace unsafe operations with safer alternatives",
+      "detected_at": "2025-08-18T17:10:58.006865358Z"
+    }
+  ],
+  "recommendations": [
+    "Remove hardcoded secrets and use GitHub Secrets instead",
+    "Review and minimize workflow permissions using principle of least privilege",
+    "Update GitHub Actions to latest stable versions",
+    "Validate and sanitize all user inputs used in shell commands",
+    "Use HTTPS URLs for all external network requests",
+    "Review and replace unsafe operations with safer alternatives",
+    "Update runtime versions to latest stable versions with security patches"
+  ],
+  "score": 70,
+  "is_secure": false,
+  "scan_duration": {
+    "secs": 0,
+    "nanos": 1211232
+  },
+  "metadata": {
+    "severity_low": 0,
+    "total_vulnerabilities": 3,
+    "severity_medium": 2,
+    "severity_critical": 1,
+    "severity_info": 0,
+    "severity_high": 0,
+    "scan_timestamp": "2025-08-18T17:10:58.006865358+00:00"
+  }
+}

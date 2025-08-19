@@ -1,0 +1,65 @@
+[package]
+name = "simple-task-orchestrator"
+version.workspace = true
+edition.workspace = true
+authors.workspace = true
+license.workspace = true
+repository.workspace = true
+description = "A simplified task orchestrator MCP server"
+
+[dependencies]
+tokio = { workspace = true }
+axum = { workspace = true }
+tower = { workspace = true }
+tower-http = { workspace = true }
+uuid = { workspace = true }
+serde = { workspace = true }
+serde_json = { workspace = true }
+chrono = { workspace = true }
+tracing = { workspace = true }
+tracing-subscriber = { workspace = true }
+sqlx = { version = "0.7", features = ["runtime-tokio-rustls", "sqlite", "chrono", "uuid"] }
+async-trait = "0.1"
+thiserror = { workspace = true }
+anyhow = { workspace = true }
+config = "0.13"
+clap = { version = "4.4", features = ["derive"] }
+rmcp = { path = "../../tmp/rust-sdk/crates/rmcp", features = ["server", "macros", "transport-io"] }
+tokio-util = "0.7"
+futures = "0.3"
+
+[dev-dependencies]
+tokio-test = { workspace = true }
+mockall = "0.11"
+tower = { workspace = true }
+mockito = "1.2"
+criterion = { version = "0.5", features = ["html_reports", "async_tokio"] }
+serde_json = "1.0"
+uuid = { workspace = true, features = ["v4", "serde"] }
+chrono = { workspace = true, features = ["serde"] }
+tokio = { workspace = true, features = ["full"] }
+hyper = "0.14"
+tower-http = { workspace = true, features = ["full"] }
+reqwest = { version = "0.11", features = ["json"] }
+async-trait = { workspace = true }
+tempfile = "3.8"
+
+[lib]
+name = "simple_task_orchestrator"
+path = "src/lib.rs"
+
+[[bench]]
+name = "task_benchmarks"
+harness = false
+
+[[bin]]
+name = "simple-task-orchestrator"
+path = "src/main.rs"
+
+[[bin]]
+name = "mcp_server"
+path = "src/bin/mcp_server.rs"
+
+[[bin]]
+name = "migrate"
+path = "src/bin/migrate.rs"

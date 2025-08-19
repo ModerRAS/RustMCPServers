@@ -63,6 +63,9 @@ pub trait LockManager: Send + Sync {
     async fn cleanup_expired_locks(&self) -> AppResult<u64>;
 }
 
+/// 锁管理器盒装trait，用于动态分发
+pub type DynLockManager = Arc<dyn LockManager>;
+
 /// SQLite任务仓库实现
 pub struct SqliteTaskRepository {
     pool: Pool<Sqlite>,
@@ -73,6 +76,14 @@ impl SqliteTaskRepository {
     pub async fn new(config: &DatabaseConfig) -> AppResult<Self> {
         let pool = Self::create_pool(config).await?;
         
+        // 运行数据库迁移
+        Self::run_migrations(&pool).await?;
+        
+        Ok(Self { pool })
+    }
+    
+    /// 使用现有的连接池创建仓库实例
+    pub async fn with_pool(pool: Pool<Sqlite>) -> AppResult<Self> {
         // 运行数据库迁移
         Self::run_migrations(&pool).await?;
         
@@ -480,6 +491,10 @@ pub struct SqliteLockManager {
 
 impl SqliteLockManager {
     pub async fn new(pool: Pool<Sqlite>) -> Self {
+        Self { pool }
+    }
+    
+    pub async fn with_pool(pool: Pool<Sqlite>) -> Self {
         Self { pool }
     }
 }

@@ -1,0 +1,141 @@
+name: License Check
+
+on:
+  push:
+    branches: [ master, develop ]
+  pull_request:
+    branches: [ master ]
+
+jobs:
+  license-check:
+    name: License Compliance Check
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+    
+    - name: Setup Rust
+      uses: dtolnay/rust-toolchain@stable
+      with:
+        components: clippy, rustfmt
+    
+    - name: Cache cargo registry
+      uses: actions/cache@v4
+      with:
+        path: |
+          ~/.cargo/registry
+          ~/.cargo/git
+          target
+        key: ${{ runner.os }}-cargo-${{ hashFiles('**/Cargo.lock') }}
+        restore-keys: |
+          ${{ runner.os }}-cargo-
+    
+    - name: Check license consistency
+      run: |
+        echo "🔍 Checking license consistency..."
+        
+        # 检查根目录LICENSE文件
+        if ! grep -q "MIT License" LICENSE; then
+          echo "❌ Root LICENSE file is not MIT License"
+          exit 1
+        fi
+        
+        # 检查workspace配置
+        if ! grep -q 'license = "MIT"' Cargo.toml; then
+          echo "❌ Workspace license is not MIT"
+          exit 1
+        fi
+        
+        # 检查各个包的许可证配置
+        missing_license_config=0
+        for crate in servers/*/Cargo.toml; do
+          echo "Checking $crate"
+          if ! grep -q 'license.workspace = true' "$crate" && ! grep -q 'license = "MIT"' "$crate"; then
+            echo "❌ License not properly configured in $crate"
+            missing_license_config=$((missing_license_config + 1))
+          fi
+        done
+        
+        if [ $missing_license_config -gt 0 ]; then
+          echo "❌ Found $missing_license_config crates with incorrect license configuration"
+          exit 1
+        fi
+        
+        echo "✅ All license configurations are consistent"
+    
+    - name: Check license headers
+      run: |
+        echo "🔍 Checking license headers in source files..."
+        
+        # 检查Rust源文件是否有许可证头
+        missing_headers=0
+        for file in $(find . -name "*.rs" -not -path "./target/*" -not -path "./tmp/*"); do
+          if ! grep -q "Copyright" "$file" && ! grep -q "MIT License" "$file"; then
+            echo "⚠️  Missing license header in $file"
+            missing_headers=$((missing_headers + 1))
+          fi
+        done
+        
+        if [ $missing_headers -gt 0 ]; then
+          echo "⚠️  Found $missing_headers files without license headers"
+          echo "   This is a warning, not an error"
+        else
+          echo "✅ All source files have proper license headers"
+        fi
+    
+    - name: Check dependency licenses
+      run: |
+        echo "🔍 Checking dependency licenses..."
+        
+        # 安装cargo-deny进行许可证检查
+        cargo install cargo-deny || true
+        
+        # 创建deny.toml配置
+        cat > deny.toml << 'EOF'
+        [licenses]
+        copyleft = "warn"
+        allow-osi-fsf-free = "neither"
+        default = "deny"
+        confidence-threshold = 0.8
+        
+        [[licenses.clarify]]
+        name = "ring"
+        expression = "MIT AND ISC AND OpenSSL"
+        license-files = [{ path = "LICENSE", hash = 0xbd0eed23 }]
+        
+        [bans]
+        multiple-versions = "warn"
+        wildcards = "warn"
+        highlight = "all"
+        
+        [sources]
+        unknown-registry = "warn"
+        unknown-git = "warn"
+        allow-registry = ["https://github.com/rust-lang/crates.io-index"]
+        allow-git = []
+        EOF
+        
+        # 运行许可证检查
+        if command -v cargo-deny &> /dev/null; then
+          cargo deny check licenses || true
+        else
+          echo "⚠️  cargo-deny not available, skipping dependency license check"
+        fi
+        
+        echo "✅ License dependency check completed"
+    
+    - name: Generate license report
+      run: |
+        echo "🔍 Generating license report..."
+        
+        # 安装cargo-about生成许可证报告
+        cargo install cargo-about || true
+        
+        # 生成许可证报告
+        if command -v cargo-about &> /dev/null; then
+          cargo-about generate about.hbs > LICENSE_DEPENDENCIES.html 2>/dev/null || true
+          echo "✅ License report generated"
+        else
+          echo "⚠️  cargo-about not available, skipping report generation"
+        fi

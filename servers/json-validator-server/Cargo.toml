@@ -27,8 +27,8 @@ tempfile = "3.8"
 
 [package.metadata.deb]
 name = "mcp-json-validator"
-maintainer = "Your Name <your.email@example.com>"
-copyright = "2024, Your Name"
+maintainer = "RustMCPServers Team <rustmcpservers@example.com>"
+copyright = "2024, RustMCPServers Team"
 license-file = ["../../LICENSE", "0"]
 depends = "$auto"
 section = "utils"

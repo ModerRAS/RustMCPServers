@@ -1,4 +1,4 @@
-name: apt-r2
+name: Deploy to APT Repository
 
 on:
   push:
@@ -8,22 +8,74 @@ on:
 jobs:
   deploy:
     runs-on: ubuntu-latest
+    if: github.repository == 'ModerRAS/RustMCPServers'
+    
     steps:
-      - uses: actions/checkout@v4
+      - name: Checkout code
+        uses: actions/checkout@v4
 
-      # 1. 打包 deb
-      - run: |
+      - name: Setup Rust
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          components: clippy, rustfmt
+
+      - name: Cache cargo registry
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.cargo/registry
+            ~/.cargo/git
+            target
+          key: ${{ runner.os }}-cargo-${{ hashFiles('**/Cargo.lock') }}
+          restore-keys: |
+            ${{ runner.os }}-cargo-
+
+      - name: Install cargo-deb
+        run: cargo install cargo-deb
+
+      - name: Build release binary
+        run: |
           cd servers/json-validator-server
-          cargo install cargo-deb
+          cargo build --release
+
+      - name: Package .deb file
+        run: |
+          cd servers/json-validator-server
           cargo deb
 
-      # 2. 上传
-      - uses: unfor19/install-aws-cli-action@v1
+      - name: Verify deb package
+        run: |
+          cd servers/json-validator-server/target/debian
+          ls -la *.deb
+          file *.deb
+
+      - name: Setup AWS CLI
+        uses: unfor19/install-aws-cli-action@v1
         with:
           version: 2.22.35   # 兼容 R2 的稳定版
-      - run: |
+
+      - name: Upload to R2
+        env:
+          R2_BUCKET_NAME: ${{ secrets.R2_BUCKET_NAME }}
+          R2_ACCOUNT_ID: ${{ secrets.R2_ACCOUNT_ID }}
+        run: |
+          if [ -z "$R2_BUCKET_NAME" ] || [ -z "$R2_ACCOUNT_ID" ]; then
+            echo "❌ Missing required secrets: R2_BUCKET_NAME or R2_ACCOUNT_ID"
+            exit 1
+          fi
+          
           aws configure set region auto
           aws s3 cp servers/json-validator-server/target/debian/*.deb \
              s3://${{ secrets.R2_BUCKET_NAME }}/pool/main/ \
              --endpoint-url https://${{ secrets.R2_ACCOUNT_ID }}.r2.cloudflarestorage.com \
              --checksum-algorithm CRC32
+
+      - name: Verify upload
+        env:
+          R2_BUCKET_NAME: ${{ secrets.R2_BUCKET_NAME }}
+          R2_ACCOUNT_ID: ${{ secrets.R2_ACCOUNT_ID }}
+        run: |
+          if [ -n "$R2_BUCKET_NAME" ] && [ -n "$R2_ACCOUNT_ID" ]; then
+            aws s3 ls s3://${{ secrets.R2_BUCKET_NAME }}/pool/main/ \
+               --endpoint-url https://${{ secrets.R2_ACCOUNT_ID }}.r2.cloudflarestorage.com
+          fi

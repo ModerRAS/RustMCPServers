@@ -6,14 +6,14 @@ use tokio::time::timeout;
 use uuid::Uuid;
 
 use crate::domain::{TaskId, WorkerId};
-use crate::infrastructure::LockManager;
+use crate::infrastructure::{LockManager, SqliteLockManager};
 use crate::errors::{AppError, AppResult};
 
 /// 并发控制器
 pub struct ConcurrencyController {
     task_locks: Arc<Mutex<HashMap<String, TaskLock>>>,
     semaphore: Arc<Semaphore>,
-    lock_manager: Arc<dyn LockManager>,
+    lock_manager: Arc<SqliteLockManager>,
     max_concurrent_tasks: usize,
     lock_timeout: Duration,
     cleanup_interval: Duration,
@@ -22,7 +22,7 @@ pub struct ConcurrencyController {
 impl ConcurrencyController {
     /// 创建新的并发控制器
     pub fn new(
-        lock_manager: Arc<dyn LockManager>,
+        lock_manager: Arc<SqliteLockManager>,
         max_concurrent_tasks: usize,
         lock_timeout: Duration,
         cleanup_interval: Duration,
@@ -46,8 +46,8 @@ impl ConcurrencyController {
         {
             let locks = self.task_locks.lock().await;
             if let Some(existing_lock) = locks.get(&task_key) {
-                if existing_lock.worker_id == worker_key {
-                    return Ok(TaskLockHandle::new(task_id.clone(), worker_id.clone(), self.task_locks.clone()));
+                if existing_lock.worker_id == *worker_id {
+                    return Ok(TaskLockHandle::new(task_key, worker_key, self.task_locks.clone()));
                 } else {
                     return Err(AppError::TaskAlreadyAcquired);
                 }
@@ -98,7 +98,7 @@ impl ConcurrencyController {
         };
 
         if let Some(lock) = task_lock {
-            if lock.worker_id != worker_key {
+            if lock.worker_id != *worker_key {
                 return Err(AppError::Authorization("Invalid lock owner".to_string()));
             }
 
@@ -124,7 +124,8 @@ impl ConcurrencyController {
         }
 
         // 检查分布式锁
-        self.lock_manager.check_lock(&task_key).await
+        let lock_result = self.lock_manager.check_lock(&task_key).await;
+        lock_result.map(|opt| opt.map(|s| WorkerId::new(s).unwrap_or_else(|_| WorkerId::new("unknown".to_string()).unwrap())))
     }
 
     /// 清理过期锁
@@ -143,7 +144,7 @@ impl ConcurrencyController {
             for key in expired_keys {
                 if let Some(lock) = locks.remove(&key) {
                     // 释放分布式锁
-                    let _ = self.lock_manager.release(&key, &lock.worker_id).await;
+                    let _ = self.lock_manager.release(&key, &lock.worker_id.to_string()).await;
                     cleaned += 1;
                 }
             }

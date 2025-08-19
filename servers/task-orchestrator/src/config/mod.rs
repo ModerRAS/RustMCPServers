@@ -1,5 +1,5 @@
 use serde::{Deserialize, Serialize};
-use config::{Config, ConfigError, Environment, File};
+use config::{Config, ConfigError, Environment as ConfigEnv, File};
 use std::path::PathBuf;
 use crate::errors::AppError;
 

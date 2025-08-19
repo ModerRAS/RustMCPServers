@@ -1,0 +1,83 @@
+# 开发环境配置
+[database]
+url = "sqlite:///data/tasks_dev.db"
+max_connections = 10
+min_connections = 2
+connection_timeout = 30
+idle_timeout = 600
+max_lifetime = 3600
+enable_wal_mode = true
+enable_foreign_keys = true
+busy_timeout = 30
+cache_size = -64000
+mmap_size = 268435456
+page_size = 4096
+
+[server]
+host = "127.0.0.1"
+port = 8080
+workers = 2
+timeout = 30
+max_request_size = 10485760
+enable_cors = true
+enable_compression = true
+enable_request_id = true
+enable_tracing = true
+
+[logging]
+level = "debug"
+format = "json"
+file = "logs/task-orchestrator-dev.log"
+max_file_size = 104857600
+max_backup_count = 5
+enable_json = true
+enable_pretty = false
+targets = ["stdout", "file"]
+
+[security]
+enable_auth = false
+api_key_required = false
+api_keys = []
+enable_cors = true
+allowed_origins = ["*"]
+allowed_methods = ["GET", "POST", "PUT", "DELETE"]
+allowed_headers = ["*"]
+rate_limit_enabled = false
+rate_limit_requests_per_minute = 1000
+rate_limit_burst_size = 100
+enable_https = false
+tls_cert_path = null
+tls_key_path = null
+
+[task]
+max_concurrent_tasks = 10
+default_task_timeout = 3600
+max_task_retries = 3
+task_cleanup_interval = 3600
+task_result_ttl = 2592000
+enable_priority_scheduling = true
+enable_fair_scheduling = true
+worker_timeout = 300
+heartbeat_interval = 30
+
+[monitoring]
+enable_metrics = true
+metrics_endpoint = "/metrics"
+enable_health_check = true
+health_check_endpoint = "/health"
+enable_prometheus = true
+prometheus_endpoint = "/prometheus"
+enable_tracing = false
+tracing_endpoint = null
+metrics_collection_interval = 60
+
+[cache]
+enable_cache = true
+cache_type = "memory"
+cache_ttl = 300
+cache_size = 1000
+redis_url = null
+memory_cache_size = 104857600
+
+[external_services]
+enable_external_services = false

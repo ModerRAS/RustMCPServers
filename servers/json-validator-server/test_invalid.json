@@ -1,0 +1,12 @@
+{
+  "name": "测试用户",
+  "age": 25,
+  "active": true,
+  "scores": [85, 92, 78, 95],
+  "address": {
+    "street": "中山路123号",
+    "city": "北京",
+    "zip": "100001"
+  },
+  "invalid": missing_value
+}

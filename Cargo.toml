@@ -1,6 +1,8 @@
 [workspace]
+resolver = "2"
 members = [
-    "servers/json-validator-server", "servers/task-orchestrator",
+    "servers/json-validator-server", "servers/task-orchestrator", "servers/simple-task-orchestrator",
+    "tests",
 ]
 exclude = [
     "target",
@@ -28,7 +30,7 @@ serde_json = "1.0"
 reqwest = { version = "0.12", features = ["json", "stream"] }
 axum = "0.7"
 tower = "0.5"
-tower-http = { version = "0.5", features = ["cors", "trace"] }
+tower-http = { version = "0.5", features = ["cors", "trace", "compression-br", "timeout"] }
 
 # Error handling
 thiserror = "1.0"
@@ -44,7 +46,7 @@ chrono = { version = "0.4", features = ["serde"] }
 url = "2.5"
 
 # MCP protocol
-rmcp = { version = "0.5", features = ["transport-io", "macros"] }
+rmcp = { version = "0.5", features = ["transport-io", "transport-child-process", "macros"] }
 
 # Configuration
 dotenvy = "0.15"

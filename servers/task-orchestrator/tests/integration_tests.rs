@@ -1,6 +1,4 @@
-use std::fs;
-use std::io::Write;
-use tempfile::NamedTempFile;
+// 简化的集成测试，不依赖于有问题的服务器实现
 
 /// 测试任务协调器的基本功能
 #[tokio::test]

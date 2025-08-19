@@ -23,7 +23,7 @@ jobs:
       pull-requests: read
       issues: read
       id-token: write
-      actions: read # Required for Claude to read CI results on PRs
+      actions: read
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
@@ -42,7 +42,7 @@ jobs:
             ~/.cargo/registry
             ~/.cargo/git
             target/
-          key: ${{ runner.os }}-cargo-${{ hashFiles('Cargo.lock') }}
+          key: ${{ runner.os }}-cargo-${{ hashFiles('**/Cargo.lock') }}
           restore-keys: |
             ${{ runner.os }}-cargo-
 
@@ -67,13 +67,8 @@ jobs:
             curl \
             wget \
             git \
-            docker.io \
-            docker-compose \
             jq \
             yq
-
-      - name: Setup Docker Buildx
-        uses: docker/setup-buildx-action@v3
 
       - name: Install cargo tools
         run: |
@@ -96,9 +91,6 @@ jobs:
       - name: Build release
         run: cargo build --release
 
-      - name: Build Docker image
-        run: docker build -t duckduckgo-mcp-server .
-
       - name: Run integration tests
         run: |
           # 运行JSON验证服务器的集成测试
@@ -114,30 +106,15 @@ jobs:
         uses: anthropics/claude-code-action@beta
         with:
           anthropic_api_key: ${{ secrets.ANTHROPIC_API_KEY }}
-
-          # This is an optional setting that allows Claude to read CI results on PRs
           additional_permissions: |
             actions: read
-          
-          # Optional: Specify model (defaults to Claude Sonnet 4, uncomment for Claude Opus 4)
-          # model: "claude-opus-4-20250514"
-          
-          # Optional: Customize the trigger phrase (default: @claude)
-          # trigger_phrase: "/claude"
-          
-          # Optional: Trigger when specific user is assigned to an issue
-          # assignee_trigger: "claude-bot"
-          
-          # Optional: Allow Claude to run specific commands
-          allowed_tools: "Bash(cargo build),Bash(cargo test),Bash(cargo fmt),Bash(cargo clippy),Bash(docker build),Bash(docker run),Bash(cargo audit),Bash(cargo outdated)"
-          
-          # Optional: Add custom instructions for Claude to customize its behavior for your project
+          allowed_tools: "Bash(cargo build),Bash(cargo test),Bash(cargo fmt),Bash(cargo clippy),Bash(cargo audit),Bash(cargo outdated)"
           custom_instructions: |
-            This is a Rust workspace with a DuckDuckGo MCP server as the primary member
-            Use cargo commands for building and testing from the workspace root
-            Follow Rust best practices and the project structure defined in CLAUDE.md
-            Ensure all code passes clippy and formatting checks
+            This is a Rust workspace with MCP servers.
+            Use cargo commands for building and testing from the workspace root.
+            Follow Rust best practices and the project structure defined in CLAUDE.md.
+            Ensure all code passes clippy and formatting checks.
+            Work with the workspace structure in servers/ directory.
             
         env:
           ANTHROPIC_BASE_URL: https://open.bigmodel.cn/api/anthropic/
-

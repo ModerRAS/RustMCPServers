@@ -1,0 +1,39 @@
+[package]
+name = "github-actions-tests"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+tokio = { version = "1.0", features = ["full"] }
+serde = { version = "1.0", features = ["derive"] }
+serde_json = "1.0"
+serde_yaml = "0.9"
+reqwest = { version = "0.11", features = ["json"] }
+regex = "1.0"
+chrono = { version = "0.4", features = ["serde"] }
+tempfile = "3.0"
+assert_cmd = "2.0"
+predicates = "3.0"
+mockito = "1.0"
+pretty_assertions = "1.0"
+test-case = "3.0"
+tracing = "0.1"
+tracing-subscriber = "0.3"
+rand = "0.8"
+walkdir = "2.0"
+
+[dev-dependencies]
+criterion = { version = "0.5", features = ["html_reports"] }
+tokio-test = "0.4"
+
+[[bench]]
+name = "workflow_performance"
+harness = false
+
+[[bin]]
+name = "validate_workflow"
+path = "src/bin/validate_workflow.rs"
+
+[[bin]]
+name = "security_test"
+path = "src/bin/security_test.rs"

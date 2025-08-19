@@ -7,14 +7,14 @@ use crate::domain::{
     WorkDirectory, Prompt, TaskTag, WorkerId, CreateTaskRequest, 
     CompleteTaskRequest, AcquireTaskRequest, TaskError,
 };
-use crate::infrastructure::{TaskRepository, LockManager};
+use crate::infrastructure::{TaskRepository, SqliteTaskRepository, SqliteLockManager};
 use crate::errors::{AppError, AppResult};
 use crate::models::{TaskFilter, TaskStatistics};
 
 /// 任务服务
 pub struct TaskService {
-    task_repository: Arc<dyn TaskRepository>,
-    lock_manager: Arc<dyn LockManager>,
+    task_repository: Arc<SqliteTaskRepository>,
+    lock_manager: Arc<SqliteLockManager>,
     max_retries: u32,
     task_timeout: u64,
 }
@@ -22,8 +22,8 @@ pub struct TaskService {
 impl TaskService {
     /// 创建新的任务服务
     pub fn new(
-        task_repository: Arc<dyn TaskRepository>,
-        lock_manager: Arc<dyn LockManager>,
+        task_repository: Arc<SqliteTaskRepository>,
+        lock_manager: Arc<SqliteLockManager>,
         max_retries: u32,
         task_timeout: u64,
     ) -> Self {
@@ -481,7 +481,7 @@ impl TaskMonitor {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::infrastructure::TaskRepository;
+    use crate::infrastructure::{TaskRepository, SqliteLockManager};
     use std::collections::HashMap;
 
     // Mock repository for testing
@@ -549,7 +549,7 @@ mod tests {
     struct MockLockManager;
 
     #[async_trait::async_trait]
-    impl LockManager for MockLockManager {
+    impl crate::infrastructure::LockManager for MockLockManager {
         async fn try_acquire(&self, _resource_id: &str, _owner_id: &str, _ttl_seconds: u64) -> AppResult<bool> {
             Ok(true)
         }
