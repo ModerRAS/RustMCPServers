@@ -1,0 +1,52 @@
+version: '3.8'
+
+services:
+  json-validator-standalone:
+    build:
+      context: .
+      dockerfile: ./servers/json-validator-http/Dockerfile.standalone
+    container_name: json-validator-standalone
+    ports:
+      - "8082:8082"
+    environment:
+      - RUST_LOG=info
+      - RUST_BACKTRACE=1
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8082/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+    volumes:
+      - ./logs:/app/logs
+    networks:
+      - json-validator-network
+
+  # Optional: Add a simple client for testing
+  json-validator-client:
+    image: alpine/curl:latest
+    container_name: json-validator-client
+    depends_on:
+      json-validator-standalone:
+        condition: service_healthy
+    entrypoint: /bin/sh
+    command: >
+      -c "
+      echo 'Testing JSON Validator Server...' &&
+      curl -f http://json-validator-standalone:8082/health &&
+      curl -f http://json-validator-standalone:8082/info &&
+      curl -f -X POST http://json-validator-standalone:8082/rpc -H 'Content-Type: application/json' -d '{\"jsonrpc\":\"2.0\",\"method\":\"ping\",\"id\":1}' &&
+      echo 'All tests passed!'
+      "
+    networks:
+      - json-validator-network
+    profiles:
+      - test
+
+networks:
+  json-validator-network:
+    driver: bridge
+
+volumes:
+  logs:
