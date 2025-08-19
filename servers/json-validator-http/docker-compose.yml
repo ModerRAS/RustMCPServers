@@ -1,0 +1,283 @@
+version: '3.8'
+
+services:
+  json-validator-http:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      target: runtime
+    ports:
+      - "8080:8080"
+      - "9090:9090"
+    environment:
+      - RUST_LOG=info
+      - RUST_BACKTRACE=1
+      - JSON_VALIDATOR_ENVIRONMENT=production
+      - JSON_VALIDATOR_CONFIG=/app/config/default.toml
+      - JSON_VALIDATOR_SECURITY__ENABLED=true
+      - JSON_VALIDATOR_SECURITY__API_KEY_ENABLED=true
+      - JSON_VALIDATOR_CACHE__ENABLED=true
+      - JSON_VALIDATOR_CACHE__CACHE_TYPE=redis
+      - JSON_VALIDATOR_CACHE__REDIS_URL=redis://redis:6379
+      - JSON_VALIDATOR_METRICS__ENABLED=true
+      - JSON_VALIDATOR_METRICS__PROMETHEUS_ENABLED=true
+      - JSON_VALIDATOR_MONITORING__PERFORMANCE_MONITORING=true
+      - JSON_VALIDATOR_DEPLOYMENT__ENVIRONMENT=production
+      - JSON_VALIDATOR_REDIS__ENABLED=true
+      - JSON_VALIDATOR_REDIS__URL=redis://redis:6379
+      - JSON_VALIDATOR_DATABASE__ENABLED=false
+      - JSON_VALIDATOR_LOGGING__LEVEL=info
+      - JSON_VALIDATOR_LOGGING__FORMAT=json
+      - JSON_VALIDATOR_LOGGING__STDOUT=true
+      - HEALTH_URL=http://localhost:8080/health
+      - METRICS_URL=http://localhost:9090/metrics
+      - MEMORY_THRESHOLD=90
+      - DISK_THRESHOLD=90
+    volumes:
+      - ./config:/app/config
+      - ./logs:/app/logs
+      - ./certs:/app/certs
+      - /var/log/json-validator:/var/log/json-validator
+    restart: unless-stopped
+    depends_on:
+      redis:
+        condition: service_healthy
+      postgres:
+        condition: service_healthy
+    networks:
+      - json-validator-network
+    healthcheck:
+      test: ["CMD", "/app/health-check.sh"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+    deploy:
+      resources:
+        limits:
+          memory: 512M
+          cpus: '0.5'
+        reservations:
+          memory: 256M
+          cpus: '0.25'
+      replicas: 2
+      update_config:
+        parallelism: 1
+        delay: 10s
+        failure_action: rollback
+      rollback_config:
+        parallelism: 1
+        delay: 10s
+
+  redis:
+    image: redis:7-alpine
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+      - ./config/redis.conf:/etc/redis/redis.conf
+    restart: unless-stopped
+    command: redis-server /etc/redis/redis.conf
+    networks:
+      - json-validator-network
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    deploy:
+      resources:
+        limits:
+          memory: 256M
+          cpus: '0.3'
+        reservations:
+          memory: 128M
+          cpus: '0.1'
+
+  postgres:
+    image: postgres:15-alpine
+    ports:
+      - "5432:5432"
+    environment:
+      - POSTGRES_DB=json_validator
+      - POSTGRES_USER=json_validator
+      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD:-json_validator_password}
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./config/postgres/init.sql:/docker-entrypoint-initdb.d/init.sql
+    restart: unless-stopped
+    networks:
+      - json-validator-network
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U json_validator -d json_validator"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    deploy:
+      resources:
+        limits:
+          memory: 512M
+          cpus: '0.5'
+        reservations:
+          memory: 256M
+          cpus: '0.2'
+
+  prometheus:
+    image: prom/prometheus:latest
+    ports:
+      - "9091:9090"
+    volumes:
+      - ./monitoring/prometheus.yml:/etc/prometheus/prometheus.yml
+      - ./monitoring/prometheus/alerts.yml:/etc/prometheus/alerts.yml
+      - prometheus_data:/prometheus
+    restart: unless-stopped
+    command:
+      - '--config.file=/etc/prometheus/prometheus.yml'
+      - '--storage.tsdb.path=/prometheus'
+      - '--web.console.libraries=/etc/prometheus/console_libraries'
+      - '--web.console.templates=/etc/prometheus/consoles'
+      - '--web.enable-lifecycle'
+      - '--web.enable-admin-api'
+      - '--storage.tsdb.retention.time=15d'
+    networks:
+      - json-validator-network
+    healthcheck:
+      test: ["CMD", "wget", "--spider", "-q", "http://localhost:9090/-/healthy"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+    deploy:
+      resources:
+        limits:
+          memory: 512M
+          cpus: '0.5'
+        reservations:
+          memory: 256M
+          cpus: '0.2'
+
+  grafana:
+    image: grafana/grafana:latest
+    ports:
+      - "3000:3000"
+    environment:
+      - GF_SECURITY_ADMIN_PASSWORD=${GRAFANA_PASSWORD:-admin}
+      - GF_SECURITY_ADMIN_USER=admin
+      - GF_USERS_ALLOW_SIGN_UP=false
+      - GF_INSTALL_PLUGINS=grafana-clock-panel,grafana-simple-json-datasource
+    volumes:
+      - grafana_data:/var/lib/grafana
+      - ./monitoring/grafana/dashboards:/etc/grafana/provisioning/dashboards
+      - ./monitoring/grafana/datasources:/etc/grafana/provisioning/datasources
+      - ./monitoring/grafana/dashboard-config:/etc/grafana/provisioning/dashboard-config
+    restart: unless-stopped
+    networks:
+      - json-validator-network
+    healthcheck:
+      test: ["CMD", "wget", "--spider", "-q", "http://localhost:3000/api/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+    deploy:
+      resources:
+        limits:
+          memory: 256M
+          cpus: '0.3'
+        reservations:
+          memory: 128M
+          cpus: '0.1'
+
+  nginx:
+    image: nginx:alpine
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./config/nginx/nginx.conf:/etc/nginx/nginx.conf
+      - ./config/nginx/conf.d:/etc/nginx/conf.d
+      - ./certs:/etc/nginx/certs
+      - nginx_logs:/var/log/nginx
+    restart: unless-stopped
+    depends_on:
+      - json-validator-http
+    networks:
+      - json-validator-network
+    healthcheck:
+      test: ["CMD", "wget", "--spider", "-q", "http://localhost/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+    deploy:
+      resources:
+        limits:
+          memory: 128M
+          cpus: '0.2'
+        reservations:
+          memory: 64M
+          cpus: '0.1'
+
+  alertmanager:
+    image: prom/alertmanager:latest
+    ports:
+      - "9093:9093"
+    volumes:
+      - ./monitoring/alertmanager/alertmanager.yml:/etc/alertmanager/alertmanager.yml
+      - alertmanager_data:/alertmanager
+    restart: unless-stopped
+    command:
+      - '--config.file=/etc/alertmanager/alertmanager.yml'
+      - '--storage.path=/alertmanager'
+      - '--web.external-url=http://localhost:9093'
+    networks:
+      - json-validator-network
+    healthcheck:
+      test: ["CMD", "wget", "--spider", "-q", "http://localhost:9093/-/healthy"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+    deploy:
+      resources:
+        limits:
+          memory: 128M
+          cpus: '0.2'
+        reservations:
+          memory: 64M
+          cpus: '0.1'
+
+  logspout:
+    image: gliderlabs/logspout
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+      - ./config/logspout:/etc/logspout
+    restart: unless-stopped
+    command: syslog://${LOGSTASH_HOST:-logstash}:5000
+    networks:
+      - json-validator-network
+    deploy:
+      resources:
+        limits:
+          memory: 64M
+          cpus: '0.1'
+        reservations:
+          memory: 32M
+          cpus: '0.05'
+
+volumes:
+  redis_data:
+    driver: local
+  postgres_data:
+    driver: local
+  prometheus_data:
+    driver: local
+  grafana_data:
+    driver: local
+  alertmanager_data:
+    driver: local
+  nginx_logs:
+    driver: local
+
+networks:
+  json-validator-network:
+    driver: bridge
+    ipam:
+      config:
+        - subnet: 172.20.0.0/16

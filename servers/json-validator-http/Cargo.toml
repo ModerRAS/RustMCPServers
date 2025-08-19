@@ -1,0 +1,167 @@
+[package]
+name = "json-validator-http"
+version.workspace = true
+edition.workspace = true
+authors.workspace = true
+license.workspace = true
+repository.workspace = true
+description = "HTTP protocol JSON validation MCP server"
+
+[[bin]]
+name = "json-validator-http"
+path = "src/main.rs"
+
+[[bin]]
+name = "json-validator-simple"
+path = "src/simple_main.rs"
+
+[[bin]]
+name = "json-validator-standalone"
+path = "src/standalone_main.rs"
+
+[dependencies]
+# HTTP框架
+axum = "0.7"
+tower-http = { version = "0.5", features = ["cors", "trace", "timeout", "compression-br", "limit"] }
+tower = "0.4"
+hyper = { version = "0.14", features = ["full"] }
+
+# 异步运行时
+tokio = { workspace = true, features = ["full"] }
+tokio-rustls = "0.24"
+tokio-util = "0.7"
+
+# 序列化/反序列化
+serde = { workspace = true, features = ["derive"] }
+serde_json = { workspace = true }
+
+# 错误处理
+anyhow = "1.0"
+thiserror = "1.0"
+
+# 配置管理
+config = "0.13"
+clap = { version = "4.4", features = ["derive"] }
+
+# 日志和追踪
+tracing = "0.1"
+tracing-subscriber = { version = "0.3", features = ["json", "env-filter"] }
+tracing-appender = "0.2"
+
+# 认证和安全
+jsonwebtoken = "8.3"
+bcrypt = "0.15"
+uuid = { version = "1.4", features = ["v4", "serde"] }
+base64 = "0.21"
+
+# 时间处理
+chrono = { version = "0.4", features = ["serde"] }
+
+# HTTPS支持
+rustls = "0.21"
+rustls-pemfile = "1.0"
+webpki = "0.22"
+
+# 缓存
+redis = { version = "0.24", features = ["tokio-comp", "connection-manager"] }
+lru = "0.12"
+
+# 限流
+governor = "0.6"
+tower_governor = "0.1"
+
+# 监控和指标
+prometheus = "0.13"
+metrics = "0.21"
+metrics-exporter-prometheus = "0.12"
+
+# 验证
+jsonschema = "0.18"
+regex = "1.9"
+once_cell = "1.19"
+
+# 数据库（可选）
+sqlx = { version = "0.7", features = ["postgres", "runtime-tokio-rustls", "chrono", "uuid"], optional = true }
+
+# 工具
+bytes = "1.5"
+http = "0.2"
+url = "2.4"
+mime = "0.3"
+
+# 性能优化
+sys-info = "0.9"
+parking_lot = "0.12"
+crossbeam = "0.8"
+dashmap = "5.5"
+flume = "0.11"
+async-trait = "0.1"
+
+[dev-dependencies]
+tokio-test = { workspace = true }
+tempfile = "3.8"
+reqwest = { version = "0.11", features = ["json"] }
+testcontainers = "0.15"
+mockall = "0.12"
+criterion = "0.5"
+proptest = "1.3"
+
+# 集成测试
+[features]
+default = ["full"]
+full = ["postgres"]
+postgres = ["sqlx"]
+
+# 生产环境特性
+production = ["full"]
+
+# 开发环境特性
+development = ["full"]
+
+[package.metadata.deb]
+name = "mcp-json-validator-http"
+maintainer = "RustMCPServers Team <rustmcpservers@example.com>"
+copyright = "2024, RustMCPServers Team"
+license-file = ["../../LICENSE", "0"]
+depends = "$auto"
+section = "utils"
+priority = "optional"
+assets = [
+    ["target/release/json-validator-http", "usr/bin/", "755"],
+    ["README.md", "usr/share/doc/mcp-json-validator-http/", "644"],
+    ["config/default.toml", "etc/mcp-json-validator-http/config.toml", "644"],
+]
+
+[[example]]
+name = "client"
+path = "examples/client.rs"
+required-features = []
+
+[[example]]
+name = "secure-client"
+path = "examples/secure_client.rs"
+required-features = ["production"]
+
+[[example]]
+name = "monitoring-client"
+path = "examples/monitoring_client.rs"
+required-features = ["production"]
+
+[profile.release]
+lto = true
+codegen-units = 1
+panic = "abort"
+strip = true
+
+[profile.dev]
+debug = true
+opt-level = 0
+
+[profile.test]
+debug = true
+opt-level = 1
+
+[profile.bench]
+debug = false
+opt-level = 3
+lto = true

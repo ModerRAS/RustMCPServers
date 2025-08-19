@@ -1,0 +1,290 @@
+# JSON Validator HTTP Server Configuration
+# 企业级JSON验证HTTP服务器配置
+
+[server]
+# 服务器基础配置
+host = "127.0.0.1"
+port = 8080
+workers = 4
+max_connections = 1000
+timeout = 30
+max_request_size = 10485760  # 10MB
+compression = true
+# 是否启用HTTPS
+https_enabled = false
+# HTTPS证书路径
+cert_path = "certs/server.crt"
+# HTTPS私钥路径
+key_path = "certs/server.key"
+# 是否强制客户端证书验证
+client_auth_required = false
+# 客户端CA证书路径
+client_ca_path = "certs/client-ca.crt"
+
+[cache]
+# 缓存配置
+enabled = false
+cache_type = "lru"  # Options: "redis", "lru"
+# Redis连接URL
+redis_url = "redis://localhost:6379"
+# 缓存TTL（秒）
+ttl = 3600
+# 最大缓存条目数
+max_size = 1000
+# 缓存键前缀
+key_prefix = "json_validator:"
+
+[security]
+# 安全配置
+enabled = true
+# JWT密钥（生产环境必须修改）
+jwt_secret = "your-secret-key-here-change-in-production"
+# JWT过期时间（秒）
+jwt_expiry = 86400  # 24 hours
+# 速率限制（每分钟请求数）
+rate_limit = 100
+# 最大请求体大小
+max_body_size = 10485760  # 10MB
+# 是否启用API密钥认证
+api_key_enabled = true
+# API密钥前缀
+api_key_prefix = "json-val"
+# 是否启用严格安全模式
+strict_mode = true
+
+[security.cors]
+# CORS配置
+enabled = true
+allow_origins = ["*"]
+allow_methods = ["GET", "POST", "PUT", "DELETE", "OPTIONS"]
+allow_headers = ["*"]
+allow_credentials = false
+max_age = 86400
+
+[security.rate_limiting]
+# 速率限制配置
+algorithm = "token_bucket"  # Options: "token_bucket", "sliding_window", "fixed_window"
+# 全局限流配置
+global_limit = 1000
+# IP白名单
+whitelist = ["127.0.0.1", "::1"]
+# 限流错误消息
+error_message = "Rate limit exceeded. Please try again later."
+
+[security.api_keys]
+# 预定义的API密钥（生产环境应该使用数据库或环境变量）
+# 格式: key_id = { name = "Key Name", permissions = ["read", "write"], rate_limit = 100 }
+admin_key = { name = "Admin Key", permissions = ["read", "write", "admin"], rate_limit = 1000 }
+user_key = { name = "User Key", permissions = ["read", "write"], rate_limit = 100 }
+readonly_key = { name = "Readonly Key", permissions = ["read"], rate_limit = 50 }
+
+[security.tls]
+# TLS配置
+min_version = "tls1_2"  # Options: "tls1_2", "tls1_3"
+cipher_suites = [
+    "TLS13_AES_256_GCM_SHA384",
+    "TLS13_AES_128_GCM_SHA256",
+    "TLS_CHACHA20_POLY1305_SHA256",
+    "TLS_AES_256_GCM_SHA384",
+    "TLS_AES_128_GCM_SHA256"
+]
+
+[security.allowed_ips]
+# IP白名单配置
+ips = ["127.0.0.1", "::1"]
+# 是否启用IP白名单
+enabled = false
+
+[logging]
+# 日志配置
+level = "info"
+format = "json"
+stdout = true
+stderr = false
+# 日志文件路径
+file_path = "/var/log/json-validator.log"
+
+[logging.rotation]
+# 日志轮转配置
+enabled = false
+max_size = 104857600  # 100MB
+max_files = 10
+# 轮转周期
+rotation = "daily"  # Options: "daily", "hourly", "size"
+
+[metrics]
+# 监控指标配置
+enabled = true
+port = 9090
+path = "/metrics"
+interval = 15
+# 是否启用Prometheus指标
+prometheus_enabled = true
+# 是否启用详细指标
+detailed_metrics = true
+
+[monitoring]
+# 监控配置
+# 健康检查间隔（秒）
+health_check_interval = 30
+# 是否启用性能监控
+performance_monitoring = true
+# 是否启用错误追踪
+error_tracking = true
+# 是否启用请求追踪
+request_tracing = true
+
+[validation]
+# JSON验证配置
+max_json_size = 10485760  # 10MB
+max_schema_size = 1048576  # 1MB
+strict_mode = false
+custom_formats = false
+timeout = 5000  # 5 seconds
+max_concurrent = 100
+# 是否启用验证缓存
+cache_validation = true
+# 是否启用详细错误信息
+detailed_errors = true
+
+[performance]
+# 性能优化配置
+
+[performance.basic]
+# 基础性能配置
+# 连接池大小
+connection_pool_size = 10
+# 请求队列大小
+request_queue_size = 100
+# 是否启用压缩
+enable_compression = true
+# 压缩级别
+compression_level = 6
+# 是否启用缓存
+enable_caching = true
+
+[performance.optimized]
+# 优化性能配置
+# 最大并发请求数
+max_concurrent_requests = 1000
+# 连接池大小
+connection_pool_size = 10
+# 缓存大小
+cache_size = 1000
+# 内存限制 (MB)
+memory_limit_mb = 512
+# 请求超时时间
+request_timeout = 30
+# 是否启用内存池
+enable_memory_pool = true
+# 是否启用连接复用
+enable_connection_reuse = true
+# 是否启用压缩
+enable_compression = true
+
+[performance.memory]
+# 内存管理配置
+# 内存限制 (MB)
+memory_limit_mb = 512
+# 是否启用内存池
+enable_memory_pool = true
+# 内存池大小
+memory_pool_size = 1000
+# 是否启用垃圾回收优化
+enable_gc_optimization = true
+# 内存分配策略
+allocation_strategy = "adaptive"
+
+[performance.concurrency]
+# 并发控制配置
+# 最大并发请求数
+max_concurrent_requests = 1000
+# 工作线程数
+worker_threads = 4
+# 请求超时时间
+request_timeout_secs = 30
+# 是否启用连接复用
+enable_connection_reuse = true
+# 是否启用异步处理
+enable_async_processing = true
+
+[performance.cache_optimization]
+# 缓存优化配置
+# 缓存预热
+cache_warmup = true
+# 缓存淘汰策略
+eviction_policy = "lru"
+# 缓存压缩
+enable_cache_compression = false
+# 缓存分片
+cache_sharding = false
+# 缓存分片数量
+cache_shards = 4
+
+[deployment]
+# 部署配置
+# 环境类型
+environment = "development"  # Options: "development", "staging", "production"
+# 是否启用调试模式
+debug_mode = false
+# 是否启用热重载
+hot_reload = false
+# 是否启用优雅关闭
+graceful_shutdown = true
+# 关闭超时时间（秒）
+shutdown_timeout = 30
+
+[database]
+# 数据库配置（可选）
+# 如果启用，将使用数据库存储配置和API密钥
+enabled = false
+# 数据库URL
+url = "postgresql://username:password@localhost/json_validator"
+# 连接池大小
+pool_size = 5
+# 最大连接数
+max_connections = 10
+# 连接超时时间（秒）
+connection_timeout = 30
+
+[redis]
+# Redis配置（可选）
+enabled = false
+url = "redis://localhost:6379"
+# 数据库编号
+db = 0
+# 连接池大小
+pool_size = 5
+# 连接超时时间（秒）
+connection_timeout = 5
+
+[notifications]
+# 通知配置
+# 是否启用通知
+enabled = false
+# 通知类型
+types = ["email", "webhook", "slack"]
+# 告警阈值
+alert_thresholds = { error_rate = 0.1, response_time = 1000, memory_usage = 0.8 }
+
+[backup]
+# 备份配置
+# 是否启用备份
+enabled = false
+# 备份间隔（小时）
+interval = 24
+# 备份保留天数
+retention_days = 30
+# 备份存储路径
+storage_path = "/var/backups/json-validator"
+
+[audit]
+# 审计日志配置
+# 是否启用审计日志
+enabled = false
+# 审计日志文件路径
+file_path = "/var/log/json-validator-audit.log"
+# 审计事件类型
+event_types = ["authentication", "authorization", "validation", "error"]
+# 是否启用详细审计
+detailed = true
