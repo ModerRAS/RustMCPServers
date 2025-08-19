@@ -1,7 +1,11 @@
 [workspace]
 resolver = "2"
 members = [
-    "servers/json-validator-server", "servers/task-orchestrator", "servers/task-orchestrator-mcp",
+    "servers/json-validator-server", 
+    "servers/json-validator-http", 
+    "servers/json-validator-http/json-validator-standalone",
+    "servers/task-orchestrator", 
+    "servers/task-orchestrator-mcp",
     "tests",
 ]
 exclude = [
