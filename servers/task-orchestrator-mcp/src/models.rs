@@ -23,22 +23,17 @@ pub struct Task {
     pub error_message: Option<String>,
 }
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Serialize, Deserialize, schemars::JsonSchema)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Serialize, Deserialize, schemars::JsonSchema, Default)]
 pub enum TaskPriority {
     #[schemars(description = "Low priority task")]
     Low = 1,
     #[schemars(description = "Medium priority task")]
+    #[default]
     Medium = 2,
     #[schemars(description = "High priority task")]
     High = 3,
     #[schemars(description = "Urgent priority task")]
     Urgent = 4,
-}
-
-impl Default for TaskPriority {
-    fn default() -> Self {
-        TaskPriority::Medium
-    }
 }
 
 impl From<i32> for TaskPriority {
@@ -53,9 +48,10 @@ impl From<i32> for TaskPriority {
     }
 }
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize, schemars::JsonSchema)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize, schemars::JsonSchema, Default)]
 pub enum TaskStatus {
     #[schemars(description = "Task is pending execution")]
+    #[default]
     Pending = 0,
     #[schemars(description = "Task is waiting for resources")]
     Waiting = 1,
@@ -67,12 +63,6 @@ pub enum TaskStatus {
     Failed = 4,
     #[schemars(description = "Task was cancelled")]
     Cancelled = 5,
-}
-
-impl Default for TaskStatus {
-    fn default() -> Self {
-        TaskStatus::Pending
-    }
 }
 
 impl From<i32> for TaskStatus {

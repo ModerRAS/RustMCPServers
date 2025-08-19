@@ -149,7 +149,7 @@ impl TaskRepository for InMemoryTaskRepository {
         }
 
         if let Some(ref worker_id) = filter.worker_id {
-            filtered_tasks.retain(|task| task.worker_id.as_ref().map_or(false, |id| id == worker_id));
+            filtered_tasks.retain(|task| task.worker_id.as_ref() == Some(worker_id));
         }
 
         // Sort by priority and creation time
@@ -308,7 +308,7 @@ impl TaskRepository for InMemoryTaskRepository {
         
         tasks.retain(|_, task| {
             !(task.status == TaskStatus::Completed || task.status == TaskStatus::Failed || task.status == TaskStatus::Cancelled)
-                || task.completed_at.map_or(false, |completed| completed > older_than)
+                || task.completed_at.is_some_and(|completed| completed > older_than)
         });
         
         Ok((initial_count - tasks.len()) as u64)

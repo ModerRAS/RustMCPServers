@@ -13,7 +13,7 @@ pub enum ConfigError {
     EnvVarNotFound(String), // Reserved for future use
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize, Default)]
 pub struct Config {
     pub server: ServerConfig,
     pub database: DatabaseConfig,
@@ -130,17 +130,6 @@ impl Default for MonitoringConfig {
     }
 }
 
-impl Default for Config {
-    fn default() -> Self {
-        Self {
-            server: ServerConfig::default(),
-            database: DatabaseConfig::default(),
-            logging: LoggingConfig::default(),
-            task: TaskConfig::default(),
-            monitoring: MonitoringConfig::default(),
-        }
-    }
-}
 
 impl Config {
     pub fn from_env() -> Result<Self, ConfigError> {
