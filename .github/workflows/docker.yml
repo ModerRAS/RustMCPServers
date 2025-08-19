@@ -55,7 +55,7 @@ jobs:
       uses: docker/build-push-action@v5
       with:
         context: .
-        file: ./servers/json-validator-http/Dockerfile.standalone
+        file: ./servers/json-validator-http/Dockerfile.simple
         push: ${{ github.event_name != 'pull_request' }}
         tags: |
           ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:standalone-${{ steps.meta.outputs.version }}
