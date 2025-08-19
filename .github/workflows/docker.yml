@@ -15,7 +15,7 @@ on:
 
 env:
   REGISTRY: ghcr.io
-  IMAGE_NAME: ${{ github.repository }}
+  IMAGE_NAME: ${{ github.repository_owner }}/${{ github.repository_owner | lower }}rustmcpservers
 
 jobs:
   build-and-push:
@@ -49,6 +49,15 @@ jobs:
           type=ref,event=pr
           type=sha,prefix={{branch}}-
           type=raw,value=latest,enable={{is_default_branch}}
+        labels: |
+          org.opencontainers.image.title=${{ github.repository }}
+          org.opencontainers.image.description=${{ github.event.repository.description }}
+          org.opencontainers.image.url=${{ github.event.repository.html_url }}
+          org.opencontainers.image.source=${{ github.event.repository.clone_url }}
+          org.opencontainers.image.version=${{ github.ref_name }}
+          org.opencontainers.image.created=${{ github.event.repository.created_at }}
+          org.opencontainers.image.revision=${{ github.sha }}
+          org.opencontainers.image.licenses=${{ github.event.repository.license.spdx_id }}
 
     - name: Build and push standalone Docker image
       id: build-standalone
