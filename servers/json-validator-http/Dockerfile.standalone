@@ -20,13 +20,13 @@ COPY servers/json-validator-http/json-validator-standalone/Cargo.lock ./
 RUN mkdir -p src && echo "fn main() { println!(\"placeholder\"); }" > src/main.rs
 
 # Build dependencies first (this layer will be cached)
-RUN cargo build --release && rm -rf src
+RUN cargo build --release --bin json-validator-standalone && rm -rf src
 
 # Now copy actual source code
 COPY servers/json-validator-http/json-validator-standalone/src ./src/
 
 # Build the actual binary
-RUN cargo build --release
+RUN cargo build --release --bin json-validator-standalone
 
 # Runtime stage
 FROM debian:12-slim AS runtime
