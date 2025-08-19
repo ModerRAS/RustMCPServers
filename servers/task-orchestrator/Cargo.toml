@@ -74,23 +74,3 @@ criterion = "0.5"
 default = []
 test-utils = []
 
-[profile.dev]
-opt-level = 0
-debug = true
-lto = false
-
-[profile.release]
-opt-level = 3
-debug = false
-lto = true
-codegen-units = 1
-panic = "abort"
-
-[profile.test]
-opt-level = 1
-debug = true
-
-[profile.bench]
-opt-level = 3
-debug = false
-lto = true

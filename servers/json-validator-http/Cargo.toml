@@ -147,21 +147,3 @@ name = "monitoring-client"
 path = "examples/monitoring_client.rs"
 required-features = ["production"]
 
-[profile.release]
-lto = true
-codegen-units = 1
-panic = "abort"
-strip = true
-
-[profile.dev]
-debug = true
-opt-level = 0
-
-[profile.test]
-debug = true
-opt-level = 1
-
-[profile.bench]
-debug = false
-opt-level = 3
-lto = true
