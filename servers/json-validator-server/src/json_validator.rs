@@ -3,7 +3,7 @@ use std::future::Future;
 use std::path::Path;
 
 use rmcp::{
-    handler::server::{router::tool::ToolRouter, tool::Parameters},
+    handler::server::{router::tool::ToolRouter, tool::Parameters, wrapper::Json},
     model::*,
     schemars, tool, tool_handler, tool_router, ServerHandler,
 };
@@ -53,59 +53,55 @@ impl JsonValidator {
     async fn validate_json_file(
         &self,
         Parameters(ValidateFileRequest { file_path }): Parameters<ValidateFileRequest>,
-    ) -> String {
+    ) -> Result<Json<ValidationResult>, String> {
         tracing::info!(file_path = %file_path, "Validating JSON file");
 
         let path = Path::new(&file_path);
 
         // 检查文件是否存在
         if !path.exists() {
-            let result = ValidationResult {
+            return Ok(Json(ValidationResult {
                 valid: false,
                 message: format!("File not found: {file_path}"),
                 file_path: Some(file_path),
                 error_line: None,
                 error_column: None,
-            };
-            return serde_json::to_string(&result).unwrap();
+            }));
         }
 
         // 读取文件内容
         let content = match fs::read_to_string(path) {
             Ok(content) => content,
             Err(e) => {
-                let result = ValidationResult {
+                return Ok(Json(ValidationResult {
                     valid: false,
                     message: format!("IO error: {e}"),
                     file_path: Some(file_path),
                     error_line: None,
                     error_column: None,
-                };
-                return serde_json::to_string(&result).unwrap();
+                }));
             }
         };
 
         // 验证JSON格式
         match serde_json::from_str::<serde_json::Value>(&content) {
             Ok(_) => {
-                let result = ValidationResult {
+                Ok(Json(ValidationResult {
                     valid: true,
                     message: "JSON file is valid".to_string(),
                     file_path: Some(file_path),
                     error_line: None,
                     error_column: None,
-                };
-                serde_json::to_string(&result).unwrap()
+                }))
             }
             Err(e) => {
-                let result = ValidationResult {
+                Ok(Json(ValidationResult {
                     valid: false,
                     message: format!("Invalid JSON: {e}"),
                     file_path: Some(file_path),
                     error_line: Some(e.line()),
                     error_column: Some(e.column()),
-                };
-                serde_json::to_string(&result).unwrap()
+                }))
             }
         }
     }
@@ -114,30 +110,28 @@ impl JsonValidator {
     async fn validate_json_content(
         &self,
         Parameters(ValidateJsonRequest { json_content }): Parameters<ValidateJsonRequest>,
-    ) -> String {
+    ) -> Result<Json<ValidationResult>, String> {
         tracing::info!("Validating JSON content");
 
         // 验证JSON格式
         match serde_json::from_str::<serde_json::Value>(&json_content) {
             Ok(_) => {
-                let result = ValidationResult {
+                Ok(Json(ValidationResult {
                     valid: true,
                     message: "JSON content is valid".to_string(),
                     file_path: None,
                     error_line: None,
                     error_column: None,
-                };
-                serde_json::to_string(&result).unwrap()
+                }))
             }
             Err(e) => {
-                let result = ValidationResult {
+                Ok(Json(ValidationResult {
                     valid: false,
                     message: format!("Invalid JSON: {e}"),
                     file_path: None,
                     error_line: Some(e.line()),
                     error_column: Some(e.column()),
-                };
-                serde_json::to_string(&result).unwrap()
+                }))
             }
         }
     }
@@ -146,41 +140,38 @@ impl JsonValidator {
     async fn format_json(
         &self,
         Parameters(ValidateJsonRequest { json_content }): Parameters<ValidateJsonRequest>,
-    ) -> String {
+    ) -> Result<Json<FormatResult>, String> {
         tracing::info!("Formatting JSON content");
 
         match serde_json::from_str::<serde_json::Value>(&json_content) {
             Ok(value) => match serde_json::to_string_pretty(&value) {
                 Ok(formatted) => {
-                    let result = FormatResult {
+                    Ok(Json(FormatResult {
                         success: true,
                         formatted_json: Some(formatted),
                         message: None,
                         error_line: None,
                         error_column: None,
-                    };
-                    serde_json::to_string(&result).unwrap()
+                    }))
                 }
                 Err(e) => {
-                    let result = FormatResult {
+                    Ok(Json(FormatResult {
                         success: false,
                         formatted_json: None,
                         message: Some(format!("Failed to format JSON: {e}")),
                         error_line: None,
                         error_column: None,
-                    };
-                    serde_json::to_string(&result).unwrap()
+                    }))
                 }
             },
             Err(e) => {
-                let result = FormatResult {
+                Ok(Json(FormatResult {
                     success: false,
                     formatted_json: None,
                     message: Some(format!("Invalid JSON: {e}")),
                     error_line: Some(e.line()),
                     error_column: Some(e.column()),
-                };
-                serde_json::to_string(&result).unwrap()
+                }))
             }
         }
     }
