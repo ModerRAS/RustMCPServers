@@ -67,7 +67,7 @@ jobs:
         fi
     
     - name: Upload artifacts
-      uses: actions/upload-artifact@v3
+      uses: actions/upload-artifact@v4
       with:
         name: binaries-${{ matrix.os }}-${{ matrix.target }}
         path: |
@@ -164,7 +164,7 @@ jobs:
           ${{ runner.os }}-
     
     - name: Download artifacts
-      uses: actions/download-artifact@v3
+      uses: actions/download-artifact@v4
     
     - name: Create release
       uses: softprops/action-gh-release@v1

@@ -159,7 +159,7 @@ jobs:
         bandit -r . -f json -o bandit-report.json || true
     
     - name: Upload bandit report
-      uses: actions/upload-artifact@v3
+      uses: actions/upload-artifact@v4
       with:
         name: bandit-report
         path: bandit-report.json
@@ -215,7 +215,7 @@ jobs:
       run: cargo cyclonedx --all --format json --output sbom.json
     
     - name: Upload SBOM
-      uses: actions/upload-artifact@v3
+      uses: actions/upload-artifact@v4
       with:
         name: sbom
         path: sbom.json
