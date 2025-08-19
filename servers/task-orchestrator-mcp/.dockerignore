@@ -1,0 +1,47 @@
+# Git
+.git
+.gitignore
+
+# Rust
+target/
+**/*.rs.bk
+Cargo.lock
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Logs
+*.log
+
+# Documentation
+docs/
+README.md
+CLAUDE.md
+
+# CI/CD
+.github/
+.gitlab-ci.yml
+
+# Temp files
+tmp/
+*.tmp
+*.temp
+
+# Docker
+Dockerfile
+.dockerignore
+
+# Testing
+tests/
+*.test
+
+# Configuration files (users should mount their own)
+config.toml
