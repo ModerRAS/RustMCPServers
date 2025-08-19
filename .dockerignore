@@ -1,0 +1,19 @@
+# Ignore unnecessary files for Docker build
+.git
+.github
+target
+**/target/
+**/.git/
+**/.github/
+**/node_modules/
+**/.DS_Store
+**/Thumbs.db
+**/*.log
+**/tmp/
+**/temp/
+docs/*.md
+*.md
+!servers/json-validator-http/**/*.md
+!servers/json-validator-http/**/Cargo.toml
+!servers/json-validator-http/**/Cargo.lock
+!servers/json-validator-http/**/src/**
