@@ -1,0 +1,34 @@
+# Task Orchestrator MCP Server Configuration
+
+[server]
+host = "127.0.0.1"
+port = 8080
+timeout_seconds = 30
+max_connections = 100
+
+[database]
+url = "sqlite:///data/tasks.db"
+max_connections = 20
+min_connections = 5
+enable_wal_mode = true
+busy_timeout_seconds = 30
+
+[logging]
+level = "info"
+format = "pretty"
+# file = "/var/log/task-orchestrator-mcp.log"
+max_size_mb = 100
+max_files = 5
+
+[task]
+max_concurrent_tasks = 10
+default_timeout_seconds = 3600
+max_retries = 3
+cleanup_interval_seconds = 3600
+heartbeat_interval_seconds = 30
+
+[monitoring]
+metrics_enabled = true
+metrics_interval_seconds = 60
+health_check_enabled = true
+health_check_interval_seconds = 30

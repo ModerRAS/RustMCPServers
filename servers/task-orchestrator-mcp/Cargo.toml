@@ -1,0 +1,42 @@
+[package]
+name = "task-orchestrator-mcp"
+version = "0.1.0"
+edition = "2021"
+description = "A task orchestrator MCP server with HTTP transport and SQLite storage"
+authors = ["RustMCPServers Team"]
+
+[dependencies]
+# Workspace dependencies
+rmcp = { workspace = true, features = [
+    "transport-streamable-http-server",
+    "transport-streamable-http-server-session",
+    "transport-worker",
+] }
+tokio = { workspace = true }
+axum = { workspace = true }
+tower = { workspace = true }
+tower-http = { workspace = true, features = ["trace", "cors", "compression-br"] }
+serde = { workspace = true }
+serde_json = { workspace = true }
+uuid = { workspace = true }
+chrono = { workspace = true }
+thiserror = { workspace = true }
+tracing = { workspace = true }
+tracing-subscriber = { version = "0.3", features = ["env-filter", "json"] }
+schemars = "1.0"
+toml = "0.8"
+async-trait = { workspace = true }
+
+[dev-dependencies]
+tokio-test = "0.4"
+mockall = "0.12"
+test-log = "0.2"
+
+[[bin]]
+name = "task-orchestrator-mcp"
+path = "src/main.rs"
+
+[features]
+default = ["http-transport"]
+http-transport = []
+stdio-transport = []
