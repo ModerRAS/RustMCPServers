@@ -41,6 +41,9 @@ cargo build --release
 - 可以在Claude Code中测试实用效果，怎么安装参考docs/claude-code-mcp-setup.md
 ## 关于 Github Actions
 - 如果需要新建发布版本用的github actions，可以参考docs/monorepo-release-guide.md
+- 如果需要构建Docker镜像，那就用Github Actions来构建，然后推送到这个仓库的ghcr.io的源上
+- Github Actions在触发之后一定要记得使用gh命令去看结果，可以等一会然后看看执行结果
 ## 注意事项
 - 根目录下的tmp文件夹是用来放一些参考用的临时文件的，这个文件夹是被gitignore掉的，所以如果你有需要参考的git仓库，或者是需要参考的示例文件之类的你可以clone或者下载到tmp文件夹里，然后用来参考。
 - 脚本相关文件可以放在scripts文件夹
+
