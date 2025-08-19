@@ -1,12 +1,13 @@
 [workspace]
 resolver = "2"
 members = [
-    "servers/json-validator-server", "servers/task-orchestrator", "servers/simple-task-orchestrator",
+    "servers/json-validator-server", "servers/task-orchestrator",
     "tests",
 ]
 exclude = [
     "target",
-    "tmp"
+    "tmp",
+    "servers/simple-task-orchestrator"
 ]
 
 [workspace.package]
