@@ -6,14 +6,14 @@
 
 ```bash
 # Pull the image
-docker pull ghcr.io/moderras/rustmcpservers/task-orchestrator-mcp:latest
+docker pull ghcr.io/moderras/rustmcpservers:latest
 
 # Run the container
 docker run -d \
   --name task-orchestrator \
   -p 8080:8080 \
   -v $(pwd)/config.toml:/app/config.toml \
-  ghcr.io/moderras/rustmcpservers/task-orchestrator-mcp:latest
+  ghcr.io/moderras/rustmcpservers:latest
 ```
 
 ### Using Docker Compose
@@ -23,7 +23,7 @@ version: '3.8'
 
 services:
   task-orchestrator:
-    image: ghcr.io/moderras/rustmcpservers/task-orchestrator-mcp:latest
+    image: ghcr.io/moderras/rustmcpservers:latest
     ports:
       - "8080:8080"
     volumes:

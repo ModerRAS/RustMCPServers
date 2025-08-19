@@ -143,7 +143,7 @@ cargo run
    - 环境变量和配置说明
 
 ### 🔧 Docker镜像信息
-- **仓库**: ghcr.io/moderras/rustmcpservers/task-orchestrator-mcp
+- **仓库**: ghcr.io/moderras/rustmcpservers
 - **标签**: latest, 版本标签
 - **平台**: linux/amd64, linux/arm64
 - **端口**: 8080
@@ -152,8 +152,8 @@ cargo run
 ### 📦 使用方式
 ```bash
 # 拉取镜像
-docker pull ghcr.io/moderras/rustmcpservers/task-orchestrator-mcp:latest
+docker pull ghcr.io/moderras/rustmcpservers:latest
 
 # 运行容器
-docker run -d -p 8080:8080 ghcr.io/moderras/rustmcpservers/task-orchestrator-mcp:latest
+docker run -d -p 8080:8080 ghcr.io/moderras/rustmcpservers:latest
 ```
