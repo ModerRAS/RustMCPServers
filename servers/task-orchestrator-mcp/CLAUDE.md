@@ -120,4 +120,40 @@ cargo run
 - 日期: 2025-08-19
 - 状态: 编译成功，无警告，功能完整，代码质量优秀
 - 测试状态: 所有测试通过
+- Docker支持: ✅ 已添加Dockerfile和GitHub Actions自动构建
+- 镜像推送: ✅ 配置GitHub Actions自动推送到GHCR
 - 下一步: 可考虑添加更多测试用例和文档
+
+## Docker部署
+
+### ✅ 已完成的Docker支持
+1. **多阶段构建Dockerfile**
+   - 使用rust:1.82-slim作为构建环境
+   - 使用debian:12-slim作为运行环境
+   - 优化镜像大小和安全性
+
+2. **GitHub Actions工作流**
+   - 自动构建多平台镜像（linux/amd64, linux/arm64）
+   - 自动推送到GitHub Container Registry (GHCR)
+   - 包含镜像测试和健康检查
+
+3. **Docker部署文档**
+   - 完整的Docker使用说明
+   - Docker Compose配置示例
+   - 环境变量和配置说明
+
+### 🔧 Docker镜像信息
+- **仓库**: ghcr.io/moderras/rustmcpservers/task-orchestrator-mcp
+- **标签**: latest, 版本标签
+- **平台**: linux/amd64, linux/arm64
+- **端口**: 8080
+- **健康检查**: /health 端点
+
+### 📦 使用方式
+```bash
+# 拉取镜像
+docker pull ghcr.io/moderras/rustmcpservers/task-orchestrator-mcp:latest
+
+# 运行容器
+docker run -d -p 8080:8080 ghcr.io/moderras/rustmcpservers/task-orchestrator-mcp:latest
+```
