@@ -410,7 +410,7 @@ pub struct ValidationConfig {
     /// 是否启用严格模式
     pub strict_mode: bool,
     /// 是否启用自定义格式验证
-    pub custom_formats: bool,
+    pub enable_custom_formats: bool,
     /// 验证超时时间（毫秒）
     pub timeout: u64,
     /// 并发验证限制
@@ -427,7 +427,7 @@ impl Default for ValidationConfig {
             max_json_size: 10 * 1024 * 1024, // 10MB
             max_schema_size: 1 * 1024 * 1024, // 1MB
             strict_mode: false,
-            custom_formats: false,
+            enable_custom_formats: false,
             timeout: 5000, // 5秒
             max_concurrent: 100,
             cache_validation: true,

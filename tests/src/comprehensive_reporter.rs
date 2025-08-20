@@ -704,7 +704,7 @@ mod tests {
             coverage_status: CoverageStatus::NeedsImprovement,
         };
 
-        let recommendations = generator.generate_recommendations(&Some(summary), &None, &None, &Some(coverage));
+        let recommendations = generator.generate_recommendations(&summary, &None, &None, &Some(coverage));
         
         assert!(!recommendations.is_empty());
         assert!(recommendations.iter().any(|r| r.title.contains("提高测试覆盖率")));

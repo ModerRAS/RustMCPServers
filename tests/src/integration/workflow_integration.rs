@@ -30,7 +30,7 @@ mod ci_workflow_integration_tests {
         let tester = WorkflowIntegrationTester::new();
         let result = tester.test_ci_workflow_integration(workspace_root);
         
-        assert!(result.is_success(), "CI工作流集成应该成功");
+        assert!(result.is_success, "CI工作流集成应该成功");
         assert!(result.build_passed, "构建应该通过");
         assert!(result.tests_passed, "测试应该通过");
         assert!(result.security_checks_passed, "安全检查应该通过");
@@ -48,7 +48,7 @@ mod ci_workflow_integration_tests {
         let cache_strategy = CacheStrategy::new();
         let result = tester.test_ci_workflow_with_cache(workspace_root, &cache_strategy);
         
-        assert!(result.is_success(), "带缓存的CI工作流应该成功");
+        assert!(result.is_success, "带缓存的CI工作流应该成功");
         assert!(result.cache_hit_rate > 0.7, "缓存命中率应该大于70%");
         assert!(result.build_time_improvement > 0.1, "构建时间应该有改进");
     }
@@ -80,7 +80,7 @@ mod ci_workflow_integration_tests {
         let tester = WorkflowIntegrationTester::new();
         let result = tester.test_ci_workflow_parallel_execution(workspace_root, 3);
         
-        assert!(result.is_success(), "并行CI工作流应该成功");
+        assert!(result.is_success, "并行CI工作流应该成功");
         assert_eq!(result.parallel_jobs_completed, 3, "应该完成3个并行作业");
         assert!(result.resource_usage_balanced, "资源使用应该平衡");
         assert!(result.no_deadlocks, "不应该有死锁");
@@ -96,7 +96,7 @@ mod ci_workflow_integration_tests {
         let tester = WorkflowIntegrationTester::new();
         let result = tester.test_ci_workflow_environment_integration(workspace_root);
         
-        assert!(result.is_success(), "CI工作流环境集成应该成功");
+        assert!(result.is_success, "CI工作流环境集成应该成功");
         assert!(result.environment_variables_set, "环境变量应该设置正确");
         assert!(result.tools_installed, "工具应该安装正确");
         assert!(result.dependencies_resolved, "依赖应该解析正确");
@@ -118,7 +118,7 @@ mod security_workflow_integration_tests {
         let tester = WorkflowIntegrationTester::new();
         let result = tester.test_security_workflow_integration(workspace_root);
         
-        assert!(result.is_success(), "安全工作流集成应该成功");
+        assert!(result.is_success, "安全工作流集成应该成功");
         assert!(result.vulnerability_scan_completed, "漏洞扫描应该完成");
         assert!(result.secret_scan_completed, "密钥扫描应该完成");
         assert!(result.license_check_completed, "许可证检查应该完成");
@@ -188,7 +188,7 @@ mod release_workflow_integration_tests {
         let tester = WorkflowIntegrationTester::new();
         let result = tester.test_release_workflow_integration(workspace_root);
         
-        assert!(result.is_success(), "发布工作流集成应该成功");
+        assert!(result.is_success, "发布工作流集成应该成功");
         assert!(result.version_bumped, "版本应该正确递增");
         assert!(result.artifacts_built, "构建物应该构建完成");
         assert!(result.release_created, "发布应该创建");
@@ -221,7 +221,7 @@ mod release_workflow_integration_tests {
         let tester = WorkflowIntegrationTester::new();
         let result = tester.test_release_workflow_multi_platform(workspace_root);
         
-        assert!(result.is_success(), "多平台发布工作流应该成功");
+        assert!(result.is_success, "多平台发布工作流应该成功");
         assert_eq!(result.platforms_built.len(), 3, "应该构建3个平台");
         assert!(result.all_platforms_successful, "所有平台应该成功");
         assert!(result.artifacts_consistent, "构建物应该一致");
@@ -341,8 +341,12 @@ pub struct WorkflowIntegrationTester {
 
 impl WorkflowIntegrationTester {
     pub fn new() -> Self {
+        // 创建一个临时工作流文件
+        let temp_workflow = tempfile::NamedTempFile::new().unwrap();
+        let workflow_path = temp_workflow.path().to_str().unwrap();
+        
         Self {
-            validator: WorkflowValidator::new(),
+            validator: WorkflowValidator::new(workflow_path).unwrap(),
             cache_strategy: CacheStrategy::new(),
             secret_scanner: SecretScanner::new(),
             build_monitor: BuildMonitor::new(),

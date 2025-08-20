@@ -1,0 +1,6 @@
+{
+  "db": "SQLite",
+  "description": "offline compilation data for sqlx",
+  "version": "0.7.4",
+  "queries": []
+}

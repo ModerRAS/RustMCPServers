@@ -25,37 +25,10 @@ impl LogManager {
                     .add_directive("task_orchestrator=info".parse().unwrap())
             });
 
-        // 创建订阅者注册器
-        let registry = tracing_subscriber::registry()
-            .with(env_filter);
-
-        // 根据配置添加不同的日志输出
-        let registry = if self.config.enable_json {
-            registry.with(tracing_subscriber::fmt::layer().json())
-        } else if self.config.enable_pretty {
-            registry.with(tracing_subscriber::fmt::layer().pretty())
-        } else {
-            registry.with(tracing_subscriber::fmt::layer().compact())
-        };
-
-        // 如果需要文件输出
-        let registry = if let Some(file_path) = &self.config.file {
-            let file = std::fs::OpenOptions::new()
-                .create(true)
-                .append(true)
-                .open(file_path)?;
-
-            let file_layer = tracing_subscriber::fmt::layer()
-                .json()
-                .with_writer(file);
-
-            registry.with(file_layer)
-        } else {
-            registry
-        };
-
-        // 初始化全局订阅者
-        registry.init();
+        // 初始化全局订阅者 - 简化实现
+        tracing_subscriber::fmt()
+            .with_env_filter(env_filter)
+            .init();
 
         info!("Logging system initialized with level: {}", self.config.level);
         Ok(())
@@ -68,6 +41,7 @@ impl LogManager {
 }
 
 /// 结构化日志记录器
+#[derive(Clone)]
 pub struct StructuredLogger {
     config: LoggingConfig,
 }
@@ -76,6 +50,15 @@ impl StructuredLogger {
     pub fn new(config: &LoggingConfig) -> Self {
         Self {
             config: config.clone(),
+        }
+    }
+
+    /// 记录一般信息日志
+    pub fn log_info(&self, message: &str, context: Option<&str>) {
+        if let Some(ctx) = context {
+            info!(message = %message, context = %ctx, "Info");
+        } else {
+            info!(message = %message, "Info");
         }
     }
 
@@ -343,8 +326,8 @@ impl LoggingMiddleware {
     }
 }
 
-impl tower_http::trace::TraceMakeSpan for LoggingMiddleware {
-    fn make_span<B>(&mut self, request: &http::Request<B>) -> Span {
+impl tower_http::trace::MakeSpan for LoggingMiddleware {
+    fn make_span<B>(&mut self, request: &axum::http::Request<B>) -> Span {
         let user_agent = request.headers()
             .get("user-agent")
             .and_then(|h| h.to_str().ok())
@@ -445,38 +428,28 @@ impl MetricsCollector {
 
     /// 记录任务创建
     pub fn record_task_created(&self, priority: &str) {
-        self.task_created_counter
-            .with_label_values(&[priority])
-            .inc();
+        self.task_created_counter.inc();
     }
 
     /// 记录任务完成
     pub fn record_task_completed(&self, priority: &str, processing_time: f64) {
-        self.task_completed_counter
-            .with_label_values(&[priority])
-            .inc();
+        self.task_completed_counter.inc();
         self.response_time_histogram.observe(processing_time);
     }
 
     /// 记录任务失败
     pub fn record_task_failed(&self, priority: &str, error_type: &str) {
-        self.task_failed_counter
-            .with_label_values(&[priority, error_type])
-            .inc();
+        self.task_failed_counter.inc();
     }
 
     /// 记录任务取消
     pub fn record_task_cancelled(&self, reason: &str) {
-        self.task_cancelled_counter
-            .with_label_values(&[reason])
-            .inc();
+        self.task_cancelled_counter.inc();
     }
 
     /// 记录任务获取
     pub fn record_task_acquired(&self, worker_id: &str) {
-        self.task_acquired_counter
-            .with_label_values(&[worker_id])
-            .inc();
+        self.task_acquired_counter.inc();
     }
 
     /// 设置活跃任务数量
@@ -491,16 +464,12 @@ impl MetricsCollector {
 
     /// 记录错误
     pub fn record_error(&self, error_type: &str, endpoint: &str) {
-        self.error_counter
-            .with_label_values(&[error_type, endpoint])
-            .inc();
+        self.error_counter.inc();
     }
 
     /// 记录数据库查询时间
     pub fn record_database_query(&self, operation: &str, table: &str, duration: f64) {
-        self.database_query_duration
-            .with_label_values(&[operation, table])
-            .observe(duration);
+        self.database_query_duration.observe(duration);
     }
 
     /// 获取所有指标的文本格式

@@ -49,7 +49,7 @@ async fn main() -> Result<()> {
     info!("Configuration loaded from: {}", args.config);
     
     // 创建应用
-    let app = create_app(config.clone()).await?;
+    let app = create_app();
     
     // 添加追踪层
     let app = app.layer(

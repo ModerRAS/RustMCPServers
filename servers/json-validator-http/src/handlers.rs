@@ -1,20 +1,28 @@
 //! HTTP请求处理器
 
 use axum::{
-    extract::{Path, Query, State},
-    http::{HeaderValue, StatusCode},
+    extract::State,
+    http::StatusCode,
     response::{IntoResponse, Json},
-    RequestPartsExt,
 };
-use serde::{Deserialize, Serialize};
+use serde::Deserialize;
+use tracing::{debug, warn, error};
 use std::collections::HashMap;
-use std::sync::Arc;
-use tracing::{debug, error, info, warn};
 
-use crate::app::AppState;
 use crate::models::*;
 use crate::services::JsonValidatorService;
-use crate::utils::logging::create_request_context;
+
+// 导入日志宏
+use crate::{log_request, log_validation};
+
+/// 健康检查处理器
+pub async fn health_check() -> impl IntoResponse {
+    Json(serde_json::json!({
+        "status": "healthy",
+        "timestamp": chrono::Utc::now().to_rfc3339(),
+        "version": env!("CARGO_PKG_VERSION")
+    }))
+}
 
 /// JSON-RPC请求处理器
 pub async fn json_rpc_handler(
@@ -225,7 +233,7 @@ async fn handle_validate_json_request(
     
     debug!("Validating JSON with options: {:?}", options);
     
-    match state.validator_service.validate_json(&args.json_data, &options).await {
+    match state.validator_service.validate_json_simple(&args.json_data, &options).await {
         Ok(result) => {
             log_validation!(
                 tracing::Level::INFO,
@@ -259,7 +267,7 @@ async fn handle_validate_json_with_schema_request(
     
     match state
         .validator_service
-        .validate_json_with_schema(&args.json_data, &args.schema, &options)
+        .validate_json_with_schema_simple(&args.json_data, &args.schema, &options)
         .await
     {
         Ok(result) => {
@@ -391,7 +399,7 @@ pub async fn server_info_handler(State(state): State<AppState>) -> impl IntoResp
             formats: vec!["JSON".to_string(), "JSON Schema".to_string()],
             cache: state.config.cache.enabled,
             batch: true,
-            custom_formats: state.config.validation.custom_formats,
+            custom_formats: state.config.validation.enable_custom_formats,
         },
     };
     

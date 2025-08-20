@@ -45,7 +45,7 @@ clap = { version = "4.4", features = ["derive"] }
 
 # 日志和追踪
 tracing = "0.1"
-tracing-subscriber = { version = "0.3", features = ["json", "env-filter"] }
+tracing-subscriber = { version = "0.3", features = ["json", "env-filter", "chrono"] }
 tracing-appender = "0.2"
 
 # 认证和安全

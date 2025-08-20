@@ -1,8 +1,9 @@
 use std::sync::Arc;
 use std::net::SocketAddr;
 use tokio::signal;
-use tower_http::{trace::TraceLayer, cors::CorsLayer, compression::CompressionLayer, timeout::TimeoutLayer, request_id::MakeRequestUuid};
+use tower_http::{trace::TraceLayer, cors::CorsLayer, compression::CompressionLayer, timeout::TimeoutLayer};
 use tower::ServiceBuilder;
+use tower_http::request_id::MakeRequestUuid;
 
 use crate::config::{ConfigManager, AppConfig};
 use crate::infrastructure::{TaskRepository, SqliteTaskRepository, SqliteLockManager};
@@ -47,8 +48,8 @@ async fn main() -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
     );
 
     // 创建锁管理器
-    let lock_manager = Arc::new(
-        SqliteLockManager::with_pool(pool.clone())
+    let lock_manager: Arc<SqliteLockManager> = Arc::new(
+        SqliteLockManager::with_pool(pool.clone()).await
     );
 
     // 创建并发控制器
@@ -61,7 +62,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
 
     // 创建速率限制器
     let rate_limiter = RateLimiter::new(
-        config.security.rate_limit_requests_per_minute as usize,
+        config.security.rate_limit_requests_per_minute,
         std::time::Duration::from_secs(60),
     );
 
@@ -69,7 +70,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
     let task_service = Arc::new(TaskService::new(
         task_repository,
         lock_manager,
-        config.task.max_retries,
+        config.task.max_task_retries,
         config.task.default_task_timeout,
     ));
 
@@ -95,7 +96,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
     // 创建API状态
     let api_state = ApiState {
         task_service: task_service.clone(),
-        logger: Arc::new(logger.clone()),
+        logger: logger.clone(),
     };
 
     // 启动后台任务
@@ -145,9 +146,9 @@ async fn main() -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
 
         #[cfg(unix)]
         let terminate = async {
-            signal::unix::signal(signal::unix::SignalKind::terminate())
-                .await
+            let mut terminate_signal = signal::unix::signal(signal::unix::SignalKind::terminate())
                 .expect("Failed to install signal handler");
+            terminate_signal.recv().await;
         };
 
         #[cfg(not(unix))]

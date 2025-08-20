@@ -1,8 +1,9 @@
-use sqlx::{SqlitePool, Sqlite, Pool, sqlite::SqliteConnectOptions, ConnectOptions, Acquire};
+use sqlx::{SqlitePool, Sqlite, Pool, sqlite::SqliteConnectOptions, ConnectOptions};
 use sqlx::migrate::MigrateDatabase;
 use chrono::{DateTime, Utc};
 use std::path::Path;
 use std::str::FromStr;
+use std::sync::Arc;
 use uuid::Uuid;
 
 use crate::domain::{Task, TaskId, TaskStatus, TaskPriority, TaskHistory};
@@ -157,30 +158,30 @@ impl TaskRepository for SqliteTaskRepository {
     async fn create_task(&self, task: &Task) -> AppResult<TaskId> {
         let task_record = TaskRecord::from_domain(task)?;
         
-        let result = sqlx::query!(
+        let result = sqlx::query(
             r#"
             INSERT INTO tasks (task_id, work_directory, prompt, priority, tags, status, 
                               worker_id, created_at, started_at, completed_at, result, 
                               error_message, retry_count, max_retries, metadata, version)
             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
             "#,
-            task_record.task_id,
-            task_record.work_directory,
-            task_record.prompt,
-            task_record.priority,
-            task_record.tags,
-            task_record.status,
-            task_record.worker_id,
-            task_record.created_at,
-            task_record.started_at,
-            task_record.completed_at,
-            task_record.result,
-            task_record.error_message,
-            task_record.retry_count,
-            task_record.max_retries,
-            task_record.metadata,
-            task_record.version,
         )
+        .bind(&task_record.task_id)
+        .bind(&task_record.work_directory)
+        .bind(&task_record.prompt)
+        .bind(&task_record.priority)
+        .bind(&task_record.tags)
+        .bind(&task_record.status)
+        .bind(&task_record.worker_id)
+        .bind(&task_record.created_at)
+        .bind(&task_record.started_at)
+        .bind(&task_record.completed_at)
+        .bind(&task_record.result)
+        .bind(&task_record.error_message)
+        .bind(&task_record.retry_count)
+        .bind(&task_record.max_retries)
+        .bind(&task_record.metadata)
+        .bind(&task_record.version)
         .execute(&self.pool)
         .await?;
         
@@ -192,11 +193,10 @@ impl TaskRepository for SqliteTaskRepository {
     }
     
     async fn get_task(&self, task_id: &TaskId) -> AppResult<Option<Task>> {
-        let record = sqlx::query_as!(
-            TaskRecord,
-            "SELECT * FROM tasks WHERE task_id = ?",
-            task_id.to_string()
+        let record = sqlx::query_as::<_, TaskRecord>(
+            "SELECT * FROM tasks WHERE task_id = ?"
         )
+        .bind(task_id.to_string())
         .fetch_optional(&self.pool)
         .await?;
         
@@ -209,7 +209,7 @@ impl TaskRepository for SqliteTaskRepository {
     async fn update_task(&self, task: &Task) -> AppResult<()> {
         let task_record = TaskRecord::from_domain(task)?;
         
-        let result = sqlx::query!(
+        let result = sqlx::query(
             r#"
             UPDATE tasks 
             SET work_directory = ?, prompt = ?, priority = ?, tags = ?, status = ?,
@@ -218,22 +218,22 @@ impl TaskRepository for SqliteTaskRepository {
                 version = version + 1, updated_at = CURRENT_TIMESTAMP
             WHERE task_id = ? AND version = ?
             "#,
-            task_record.work_directory,
-            task_record.prompt,
-            task_record.priority,
-            task_record.tags,
-            task_record.status,
-            task_record.worker_id,
-            task_record.started_at,
-            task_record.completed_at,
-            task_record.result,
-            task_record.error_message,
-            task_record.retry_count,
-            task_record.max_retries,
-            task_record.metadata,
-            task_record.task_id,
-            task_record.version - 1,
         )
+        .bind(&task_record.work_directory)
+        .bind(&task_record.prompt)
+        .bind(&task_record.priority)
+        .bind(&task_record.tags)
+        .bind(&task_record.status)
+        .bind(&task_record.worker_id)
+        .bind(&task_record.started_at)
+        .bind(&task_record.completed_at)
+        .bind(&task_record.result)
+        .bind(&task_record.error_message)
+        .bind(&task_record.retry_count)
+        .bind(&task_record.max_retries)
+        .bind(&task_record.metadata)
+        .bind(&task_record.task_id)
+        .bind(task_record.version - 1)
         .execute(&self.pool)
         .await?;
         
@@ -245,10 +245,10 @@ impl TaskRepository for SqliteTaskRepository {
     }
     
     async fn delete_task(&self, task_id: &TaskId) -> AppResult<()> {
-        let result = sqlx::query!(
-            "DELETE FROM tasks WHERE task_id = ?",
-            task_id.to_string()
+        let result = sqlx::query(
+            "DELETE FROM tasks WHERE task_id = ?"
         )
+        .bind(task_id.to_string())
         .execute(&self.pool)
         .await?;
         
@@ -260,27 +260,24 @@ impl TaskRepository for SqliteTaskRepository {
     }
     
     async fn get_next_task(&self, work_directory: &str, worker_id: &str) -> AppResult<Option<Task>> {
-        let record = sqlx::query_as!(
-            TaskRecord,
-            r#"
-            SELECT * FROM tasks 
-            WHERE work_directory = ? AND status = 'waiting' 
-            ORDER BY priority DESC, created_at ASC 
-            LIMIT 1
-            "#,
-            work_directory
+        let record = sqlx::query_as::<_, TaskRecord>(
+            "SELECT * FROM tasks 
+             WHERE work_directory = ? AND status = 'waiting' 
+             ORDER BY priority DESC, created_at ASC 
+             LIMIT 1"
         )
+        .bind(work_directory)
         .fetch_optional(&self.pool)
         .await?;
         
         match record {
             Some(record) => {
                 // 使用乐观锁获取任务
-                let updated = sqlx::query!(
-                    "UPDATE tasks SET status = 'working', worker_id = ?, started_at = CURRENT_TIMESTAMP, version = version + 1 WHERE task_id = ? AND status = 'waiting'",
-                    worker_id,
-                    record.task_id
+                let updated = sqlx::query(
+                    "UPDATE tasks SET status = 'working', worker_id = ?, started_at = CURRENT_TIMESTAMP, version = version + 1 WHERE task_id = ? AND status = 'waiting'"
                 )
+                .bind(worker_id)
+                .bind(&record.task_id)
                 .execute(&self.pool)
                 .await?;
                 
@@ -383,10 +380,8 @@ impl TaskRepository for SqliteTaskRepository {
     }
     
     async fn get_statistics(&self) -> AppResult<TaskStatistics> {
-        let stats = sqlx::query_as!(
-            StatsRow,
-            r#"
-            SELECT 
+        let stats = sqlx::query_as::<_, StatsRow>(
+            "SELECT 
                 COUNT(*) as total_tasks,
                 SUM(CASE WHEN status = 'completed' THEN 1 ELSE 0 END) as completed_tasks,
                 SUM(CASE WHEN status = 'failed' THEN 1 ELSE 0 END) as failed_tasks,
@@ -395,8 +390,7 @@ impl TaskRepository for SqliteTaskRepository {
                 SUM(CASE WHEN status = 'working' THEN 1 ELSE 0 END) as working_tasks,
                 AVG(CASE WHEN completed_at IS NOT NULL AND started_at IS NOT NULL 
                     THEN (julianday(completed_at) - julianday(started_at)) * 86400 ELSE NULL END) as avg_processing_time
-            FROM tasks
-            "#
+            FROM tasks"
         )
         .fetch_one(&self.pool)
         .await?;
@@ -428,17 +422,17 @@ impl TaskRepository for SqliteTaskRepository {
     async fn create_task_history(&self, history: &TaskHistory) -> AppResult<u64> {
         let history_record = TaskHistoryRecord::from_domain(history)?;
         
-        let result = sqlx::query!(
+        let result = sqlx::query(
             r#"
             INSERT INTO task_history (task_id, status, worker_id, changed_at, details)
             VALUES (?, ?, ?, ?, ?)
             "#,
-            history_record.task_id,
-            history_record.status,
-            history_record.worker_id,
-            history_record.changed_at,
-            history_record.details,
         )
+        .bind(&history_record.task_id)
+        .bind(&history_record.status)
+        .bind(&history_record.worker_id)
+        .bind(&history_record.changed_at)
+        .bind(&history_record.details)
         .execute(&self.pool)
         .await?;
         
@@ -446,11 +440,10 @@ impl TaskRepository for SqliteTaskRepository {
     }
     
     async fn get_task_history(&self, task_id: &TaskId) -> AppResult<Vec<TaskHistory>> {
-        let records = sqlx::query_as!(
-            TaskHistoryRecord,
-            "SELECT * FROM task_history WHERE task_id = ? ORDER BY changed_at DESC",
-            task_id.to_string()
+        let records = sqlx::query_as::<_, TaskHistoryRecord>(
+            "SELECT * FROM task_history WHERE task_id = ? ORDER BY changed_at DESC"
         )
+        .bind(task_id.to_string())
         .fetch_all(&self.pool)
         .await?;
         
@@ -462,10 +455,10 @@ impl TaskRepository for SqliteTaskRepository {
     }
     
     async fn cleanup_expired_tasks(&self, older_than: DateTime<Utc>) -> AppResult<u64> {
-        let result = sqlx::query!(
-            "DELETE FROM tasks WHERE status IN ('completed', 'failed', 'cancelled') AND completed_at < ?",
-            older_than
+        let result = sqlx::query(
+            "DELETE FROM tasks WHERE status IN ('completed', 'failed', 'cancelled') AND completed_at < ?"
         )
+        .bind(older_than)
         .execute(&self.pool)
         .await?;
         
@@ -473,10 +466,10 @@ impl TaskRepository for SqliteTaskRepository {
     }
     
     async fn retry_failed_tasks(&self, max_retries: u32) -> AppResult<u64> {
-        let result = sqlx::query!(
-            "UPDATE tasks SET status = 'waiting', worker_id = NULL, started_at = NULL, retry_count = retry_count + 1 WHERE status = 'failed' AND retry_count < ?",
-            max_retries
+        let result = sqlx::query(
+            "UPDATE tasks SET status = 'waiting', worker_id = NULL, started_at = NULL, retry_count = retry_count + 1 WHERE status = 'failed' AND retry_count < ?"
         )
+        .bind(max_retries)
         .execute(&self.pool)
         .await?;
         
@@ -504,15 +497,15 @@ impl LockManager for SqliteLockManager {
     async fn try_acquire(&self, resource_id: &str, owner_id: &str, ttl_seconds: u64) -> AppResult<bool> {
         let expires_at = Utc::now() + chrono::Duration::seconds(ttl_seconds as i64);
         
-        let result = sqlx::query!(
+        let result = sqlx::query(
             r#"
             INSERT OR IGNORE INTO locks (resource_id, owner_id, expires_at)
             VALUES (?, ?, ?)
             "#,
-            resource_id,
-            owner_id,
-            expires_at,
         )
+        .bind(resource_id)
+        .bind(owner_id)
+        .bind(expires_at)
         .execute(&self.pool)
         .await?;
         
@@ -520,11 +513,11 @@ impl LockManager for SqliteLockManager {
     }
     
     async fn release(&self, resource_id: &str, owner_id: &str) -> AppResult<bool> {
-        let result = sqlx::query!(
-            "DELETE FROM locks WHERE resource_id = ? AND owner_id = ?",
-            resource_id,
-            owner_id,
+        let result = sqlx::query(
+            "DELETE FROM locks WHERE resource_id = ? AND owner_id = ?"
         )
+        .bind(resource_id)
+        .bind(owner_id)
         .execute(&self.pool)
         .await?;
         
@@ -532,11 +525,10 @@ impl LockManager for SqliteLockManager {
     }
     
     async fn check_lock(&self, resource_id: &str) -> AppResult<Option<String>> {
-        let record = sqlx::query_as!(
-            LockRecord,
-            "SELECT * FROM locks WHERE resource_id = ? AND expires_at > CURRENT_TIMESTAMP",
-            resource_id,
+        let record = sqlx::query_as::<_, LockRecord>(
+            "SELECT * FROM locks WHERE resource_id = ? AND expires_at > CURRENT_TIMESTAMP"
         )
+        .bind(resource_id)
         .fetch_optional(&self.pool)
         .await?;
         
@@ -544,7 +536,7 @@ impl LockManager for SqliteLockManager {
     }
     
     async fn cleanup_expired_locks(&self) -> AppResult<u64> {
-        let result = sqlx::query!(
+        let result = sqlx::query(
             "DELETE FROM locks WHERE expires_at < CURRENT_TIMESTAMP"
         )
         .execute(&self.pool)

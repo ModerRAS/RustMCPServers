@@ -26,7 +26,7 @@ mod ci_cd_pipeline_tests {
         let tester = CICDPipelineTester::new();
         let result = tester.test_complete_ci_pipeline(workspace_root);
         
-        assert!(result.is_success(), "完整CI管道应该成功");
+        assert!(result.is_success, "完整CI管道应该成功");
         assert!(result.code_analysis_passed, "代码分析应该通过");
         assert!(result.unit_tests_passed, "单元测试应该通过");
         assert!(result.integration_tests_passed, "集成测试应该通过");
@@ -46,7 +46,7 @@ mod ci_cd_pipeline_tests {
         let tester = CICDPipelineTester::new();
         let result = tester.test_pr_validation_pipeline(workspace_root);
         
-        assert!(result.is_success(), "PR验证管道应该成功");
+        assert!(result.is_success, "PR验证管道应该成功");
         assert!(result.code_review_triggered, "代码审查应该触发");
         assert!(result.automated_checks_passed, "自动化检查应该通过");
         assert!(result.merge_eligibility_determined, "合并资格应该确定");
@@ -63,7 +63,7 @@ mod ci_cd_pipeline_tests {
         let tester = CICDPipelineTester::new();
         let result = tester.test_release_pipeline(workspace_root);
         
-        assert!(result.is_success(), "发布管道应该成功");
+        assert!(result.is_success, "发布管道应该成功");
         assert!(result.version_bumped, "版本应该递增");
         assert!(result.changelog_generated, "变更日志应该生成");
         assert!(result.release_notes_created, "发布说明应该创建");
@@ -100,7 +100,7 @@ mod ci_cd_pipeline_tests {
         let tester = CICDPipelineTester::new();
         let result = tester.test_multi_environment_deployment(workspace_root);
         
-        assert!(result.is_success(), "多环境部署应该成功");
+        assert!(result.is_success, "多环境部署应该成功");
         assert_eq!(result.environments_deployed.len(), 3, "应该部署到3个环境");
         assert!(result.staging_deployment_successful, "staging部署应该成功");
         assert!(result.production_deployment_successful, "生产部署应该成功");
@@ -117,7 +117,7 @@ mod ci_cd_pipeline_tests {
         let tester = CICDPipelineTester::new();
         let result = tester.test_blue_green_deployment(workspace_root);
         
-        assert!(result.is_success(), "蓝绿部署应该成功");
+        assert!(result.is_success, "蓝绿部署应该成功");
         assert!(result.blue_environment_deployed, "蓝色环境应该部署");
         assert!(result.green_environment_active, "绿色环境应该激活");
         assert!(result.traffic_switched, "流量应该切换");

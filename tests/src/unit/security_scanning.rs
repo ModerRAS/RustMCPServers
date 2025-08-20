@@ -144,7 +144,7 @@ tracing = "0.1"
         let validator = DependencyValidator::new();
         let result = validator.validate_cargo_toml(temp_file.path());
 
-        assert!(result.is_valid(), "安全的依赖应该通过验证");
+        assert!(result.is_valid, "安全的依赖应该通过验证");
         assert!(result.vulnerabilities.is_empty(), "安全的依赖不应有漏洞");
     }
 
@@ -167,7 +167,7 @@ reqwest = { version = "0.10.0" }
         let validator = DependencyValidator::new();
         let result = validator.validate_cargo_toml(temp_file.path());
 
-        assert!(!result.is_valid(), "有漏洞的依赖应该失败");
+        assert!(!result.is_valid, "有漏洞的依赖应该失败");
         assert!(!result.vulnerabilities.is_empty(), "应该检测到漏洞");
     }
 
@@ -199,7 +199,7 @@ checksum = "def456"
         let validator = DependencyValidator::new();
         let result = validator.validate_dependency_tree(temp_file.path());
 
-        assert!(result.is_valid(), "安全的依赖树应该通过验证");
+        assert!(result.is_valid, "安全的依赖树应该通过验证");
     }
 
     #[test]
@@ -223,7 +223,7 @@ checksum = "yanked123"
         let validator = DependencyValidator::new();
         let result = validator.validate_dependency_tree(temp_file.path());
 
-        assert!(!result.is_valid(), "已撤销的依赖应该失败");
+        assert!(!result.is_valid, "已撤销的依赖应该失败");
         assert!(result.yanked_dependencies.len() > 0, "应该检测到已撤销的依赖");
     }
 
@@ -245,7 +245,7 @@ serde = { version = "0.9.0" }
         let validator = DependencyValidator::new();
         let result = validator.validate_cargo_toml(temp_file.path());
 
-        assert!(!result.is_valid(), "过时的依赖应该失败");
+        assert!(!result.is_valid, "过时的依赖应该失败");
         assert!(!result.outdated_dependencies.is_empty(), "应该检测到过时的依赖");
     }
 }
@@ -274,7 +274,7 @@ reqwest = { version = "0.12", license = "MIT" }
         let validator = LicenseValidator::new();
         let result = validator.validate_licenses(temp_file.path());
 
-        assert!(result.is_valid(), "兼容的许可证应该通过验证");
+        assert!(result.is_valid, "兼容的许可证应该通过验证");
         assert!(result.incompatible_licenses.is_empty(), "兼容的许可证不应有不兼容项");
     }
 
@@ -296,7 +296,7 @@ proprietary-library = { version = "1.0", license = "Proprietary" }
         let validator = LicenseValidator::new();
         let result = validator.validate_licenses(temp_file.path());
 
-        assert!(!result.is_valid(), "不兼容的许可证应该失败");
+        assert!(!result.is_valid, "不兼容的许可证应该失败");
         assert!(!result.incompatible_licenses.is_empty(), "应该检测到不兼容的许可证");
     }
 
@@ -340,7 +340,7 @@ serde = { version = "1.0" }
         let validator = LicenseValidator::new();
         let result = validator.validate_licenses(temp_file.path());
 
-        assert!(!result.is_valid(), "缺少许可证信息应该失败");
+        assert!(!result.is_valid, "缺少许可证信息应该失败");
         assert!(!result.missing_licenses.is_empty(), "应该检测到缺少的许可证");
     }
 }
@@ -375,7 +375,7 @@ jobs:
         let analyzer = CodeQLAnalyzer::new();
         let result = analyzer.validate_workflow(temp_file.path());
 
-        assert!(result.is_valid(), "有效的CodeQL配置应该通过验证");
+        assert!(result.is_valid, "有效的CodeQL配置应该通过验证");
     }
 
     #[test]
@@ -406,7 +406,7 @@ jobs:
         let analyzer = CodeQLAnalyzer::new();
         let result = analyzer.validate_workflow(temp_file.path());
 
-        assert!(result.is_valid(), "多语言CodeQL配置应该通过验证");
+        assert!(result.is_valid, "多语言CodeQL配置应该通过验证");
     }
 
     #[test]
@@ -439,7 +439,7 @@ jobs:
         let analyzer = CodeQLAnalyzer::new();
         let result = analyzer.validate_workflow(temp_file.path());
 
-        assert!(result.is_valid(), "自定义查询包配置应该通过验证");
+        assert!(result.is_valid, "自定义查询包配置应该通过验证");
     }
 
     #[test]
@@ -467,7 +467,7 @@ jobs:
         let analyzer = CodeQLAnalyzer::new();
         let result = analyzer.validate_workflow(temp_file.path());
 
-        assert!(!result.is_valid(), "无效的CodeQL配置应该失败");
+        assert!(!result.is_valid, "无效的CodeQL配置应该失败");
     }
 }
 

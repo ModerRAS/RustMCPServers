@@ -11,7 +11,8 @@ use uuid::Uuid;
 use validator::Validate;
 
 use crate::domain::{Task, TaskId, TaskStatus, TaskPriority, Pagination};
-use crate::services::{TaskService, CreateTaskRequest, CompleteTaskRequest, AcquireTaskRequest};
+use crate::services::TaskService;
+use crate::domain::{CreateTaskRequest, CompleteTaskRequest, AcquireTaskRequest};
 use crate::models::{TaskFilter, TaskStatistics};
 use crate::errors::{AppError, AppResult, ApiResponse};
 use crate::utils::logging::StructuredLogger;
@@ -216,11 +217,11 @@ pub async fn create_task_handler(
     })?;
 
     // 转换优先级
-    let priority = request.priority
-        .map(|p| TaskPriority::from_str(&p))
-        .transpose()
-        .map_err(|_| AppError::Validation(crate::errors::ValidationError::invalid_priority(p)))?
-        .unwrap_or_default();
+    let priority = if let Some(p_str) = &request.priority {
+        TaskPriority::from_str(p_str).map_err(|_| AppError::Validation(crate::errors::ValidationError::invalid_priority(p_str.clone())))?
+    } else {
+        TaskPriority::default()
+    };
 
     // 转换标签
     let tags = request.tags
@@ -521,12 +522,13 @@ pub async fn cancel_task_handler(
     Json(request): Json<ApiCancelTaskRequest>,
 ) -> Result<impl IntoResponse, AppError> {
     let task_id = TaskId::from_str(&task_id)?;
-    let task = state.task_service.cancel_task(&task_id, request.reason).await?;
+    let reason = request.reason.clone();
+    let task = state.task_service.cancel_task(&task_id, reason.clone()).await?;
 
     // 记录日志
     state.logger.log_task_cancelled(
         &task.id.to_string(),
-        request.reason.as_deref(),
+        reason.as_deref(),
         None,
     );
 

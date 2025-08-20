@@ -4,6 +4,7 @@ use serde::{Deserialize, Serialize};
 use regex::Regex;
 
 /// GitHub Actions 工作流配置验证器
+#[derive(Debug)]
 pub struct WorkflowValidator {
     pub workflow_path: String,
     pub content: String,

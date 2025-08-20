@@ -36,9 +36,9 @@ pub use workflow_integration::WorkflowParameterResult;
 pub use workflow_integration::WorkflowConditionalResult;
 pub use workflow_integration::WorkflowErrorHandlingResult;
 
-pub use cache_integration::CacheSystemIntegrationResult;
-pub use cache_integration::CachePerformanceIntegrationResult;
-pub use cache_integration::CacheReliabilityIntegrationResult;
+// pub use cache_integration::CacheSystemIntegrationResult;
+// pub use cache_integration::CachePerformanceIntegrationResult;
+// pub use cache_integration::CacheReliabilityIntegrationResult;
 
 pub use security_integration::SecurityPipelineResult;
 pub use security_integration::VulnerabilityScanningResult;
@@ -46,7 +46,7 @@ pub use security_integration::ComplianceCheckingResult;
 
 pub use monitoring_integration::MonitoringPipelineResult;
 pub use monitoring_integration::AlertingIntegrationResult;
-pub use monitoring_integration::MetricsIntegrationResult;
+// pub use monitoring_integration::MetricsIntegrationResult;
 
 #[cfg(test)]
 mod tests {

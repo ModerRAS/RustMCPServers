@@ -31,10 +31,10 @@ jobs:
 "#;
 
         let temp_file = test_utils::create_temp_workflow(valid_yaml);
-        let validator = WorkflowValidator::new();
-        let result = validator.validate_syntax(temp_file.path());
+        let validator = WorkflowValidator::new(temp_file.path().to_str().unwrap()).unwrap();
+        let result = validator.validate();
 
-        assert!(result.is_valid(), "有效的YAML语法应该通过验证");
+        assert!(result.is_valid, "有效的YAML语法应该通过验证");
         assert!(result.errors.is_empty(), "有效YAML不应有错误");
     }
 
@@ -54,10 +54,10 @@ jobs:
 "#;
 
         let temp_file = test_utils::create_temp_workflow(invalid_yaml);
-        let validator = WorkflowValidator::new();
-        let result = validator.validate_syntax(temp_file.path());
+        let validator = WorkflowValidator::new(temp_file.path().to_str().unwrap()).unwrap();
+        let result = validator.validate();
 
-        assert!(!result.is_valid(), "无效的YAML语法应该失败");
+        assert!(!result.is_valid, "无效的YAML语法应该失败");
         assert!(!result.errors.is_empty(), "无效YAML应有错误信息");
     }
 
@@ -65,10 +65,10 @@ jobs:
     fn test_empty_workflow() {
         let empty_yaml = "";
         let temp_file = test_utils::create_temp_workflow(empty_yaml);
-        let validator = WorkflowValidator::new();
-        let result = validator.validate_syntax(temp_file.path());
+        let validator = WorkflowValidator::new(temp_file.path().to_str().unwrap()).unwrap();
+        let result = validator.validate();
 
-        assert!(!result.is_valid(), "空工作流应该失败");
+        assert!(!result.is_valid, "空工作流应该失败");
     }
 
     #[test]
@@ -86,10 +86,10 @@ jobs:
 "#;
 
         let temp_file = test_utils::create_temp_workflow(unicode_yaml);
-        let validator = WorkflowValidator::new();
-        let result = validator.validate_syntax(temp_file.path());
+        let validator = WorkflowValidator::new(temp_file.path().to_str().unwrap()).unwrap();
+        let result = validator.validate();
 
-        assert!(result.is_valid(), "包含Unicode的工作流应该通过验证");
+        assert!(result.is_valid, "包含Unicode的工作流应该通过验证");
     }
 }
 
@@ -135,10 +135,10 @@ jobs:
 "#;
 
         let temp_file = test_utils::create_temp_workflow(complete_yaml);
-        let validator = WorkflowValidator::new();
-        let result = validator.validate_structure(temp_file.path());
+        let validator = WorkflowValidator::new(temp_file.path().to_str().unwrap()).unwrap();
+        let result = validator.validate();
 
-        assert!(result.is_valid(), "完整的工作流结构应该通过验证");
+        assert!(result.is_valid, "完整的工作流结构应该通过验证");
     }
 
     #[test]
@@ -154,10 +154,10 @@ jobs:
 "#;
 
         let temp_file = test_utils::create_temp_workflow(incomplete_yaml);
-        let validator = WorkflowValidator::new();
-        let result = validator.validate_structure(temp_file.path());
+        let validator = WorkflowValidator::new(temp_file.path().to_str().unwrap()).unwrap();
+        let result = validator.validate();
 
-        assert!(!result.is_valid(), "缺少必需字段的工作流应该失败");
+        assert!(!result.is_valid, "缺少必需字段的工作流应该失败");
         assert!(result.errors.iter().any(|e| e.contains("on")));
     }
 
@@ -174,10 +174,10 @@ jobs:
 "#;
 
         let temp_file = test_utils::create_temp_workflow(invalid_job_yaml);
-        let validator = WorkflowValidator::new();
-        let result = validator.validate_structure(temp_file.path());
+        let validator = WorkflowValidator::new(temp_file.path().to_str().unwrap()).unwrap();
+        let result = validator.validate();
 
-        assert!(!result.is_valid(), "无效的作业配置应该失败");
+        assert!(!result.is_valid, "无效的作业配置应该失败");
     }
 
     #[test]
@@ -189,10 +189,10 @@ jobs: {}
 "#;
 
         let temp_file = test_utils::create_temp_workflow(empty_jobs_yaml);
-        let validator = WorkflowValidator::new();
-        let result = validator.validate_structure(temp_file.path());
+        let validator = WorkflowValidator::new(temp_file.path().to_str().unwrap()).unwrap();
+        let result = validator.validate();
 
-        assert!(!result.is_valid(), "空的作业部分应该失败");
+        assert!(!result.is_valid, "空的作业部分应该失败");
     }
 }
 
@@ -226,10 +226,10 @@ jobs:
 "#;
 
         let temp_file = test_utils::create_temp_workflow(yaml_with_deps);
-        let validator = WorkflowValidator::new();
-        let result = validator.validate_job_dependencies(temp_file.path());
+        let validator = WorkflowValidator::new(temp_file.path().to_str().unwrap()).unwrap();
+        let result = validator.validate();
 
-        assert!(result.is_valid(), "有效的任务依赖关系应该通过验证");
+        assert!(result.is_valid, "有效的任务依赖关系应该通过验证");
     }
 
     #[test]
@@ -252,10 +252,10 @@ jobs:
 "#;
 
         let temp_file = test_utils::create_temp_workflow(circular_deps_yaml);
-        let validator = WorkflowValidator::new();
-        let result = validator.validate_job_dependencies(temp_file.path());
+        let validator = WorkflowValidator::new(temp_file.path().to_str().unwrap()).unwrap();
+        let result = validator.validate();
 
-        assert!(!result.is_valid(), "循环依赖应该失败");
+        assert!(!result.is_valid, "循环依赖应该失败");
         assert!(result.errors.iter().any(|e| e.contains("circular")));
     }
 
@@ -273,10 +273,10 @@ jobs:
 "#;
 
         let temp_file = test_utils::create_temp_workflow(nonexistant_deps_yaml);
-        let validator = WorkflowValidator::new();
-        let result = validator.validate_job_dependencies(temp_file.path());
+        let validator = WorkflowValidator::new(temp_file.path().to_str().unwrap()).unwrap();
+        let result = validator.validate();
 
-        assert!(!result.is_valid(), "不存在的任务依赖应该失败");
+        assert!(!result.is_valid, "不存在的任务依赖应该失败");
     }
 
     #[test]
@@ -293,10 +293,10 @@ jobs:
 "#;
 
         let temp_file = test_utils::create_temp_workflow(self_dep_yaml);
-        let validator = WorkflowValidator::new();
-        let result = validator.validate_job_dependencies(temp_file.path());
+        let validator = WorkflowValidator::new(temp_file.path().to_str().unwrap()).unwrap();
+        let result = validator.validate();
 
-        assert!(!result.is_valid(), "自依赖应该失败");
+        assert!(!result.is_valid, "自依赖应该失败");
     }
 }
 
@@ -332,10 +332,10 @@ jobs:
 "#;
 
         let temp_file = test_utils::create_temp_workflow(valid_steps_yaml);
-        let validator = WorkflowValidator::new();
-        let result = validator.validate_steps(temp_file.path());
+        let validator = WorkflowValidator::new(temp_file.path().to_str().unwrap()).unwrap();
+        let result = validator.validate();
 
-        assert!(result.is_valid(), "有效的步骤配置应该通过验证");
+        assert!(result.is_valid, "有效的步骤配置应该通过验证");
     }
 
     #[test]
@@ -355,10 +355,10 @@ jobs:
 "#;
 
         let temp_file = test_utils::create_temp_workflow(invalid_steps_yaml);
-        let validator = WorkflowValidator::new();
-        let result = validator.validate_steps(temp_file.path());
+        let validator = WorkflowValidator::new(temp_file.path().to_str().unwrap()).unwrap();
+        let result = validator.validate();
 
-        assert!(!result.is_valid(), "无效的步骤配置应该失败");
+        assert!(!result.is_valid, "无效的步骤配置应该失败");
     }
 
     #[test]
@@ -375,10 +375,10 @@ jobs:
 "#;
 
         let temp_file = test_utils::create_temp_workflow(invalid_step_yaml);
-        let validator = WorkflowValidator::new();
-        let result = validator.validate_steps(temp_file.path());
+        let validator = WorkflowValidator::new(temp_file.path().to_str().unwrap()).unwrap();
+        let result = validator.validate();
 
-        assert!(!result.is_valid(), "同时使用run和uses的步骤应该失败");
+        assert!(!result.is_valid, "同时使用run和uses的步骤应该失败");
     }
 
     #[test]
@@ -393,10 +393,10 @@ jobs:
 "#;
 
         let temp_file = test_utils::create_temp_workflow(empty_steps_yaml);
-        let validator = WorkflowValidator::new();
-        let result = validator.validate_steps(temp_file.path());
+        let validator = WorkflowValidator::new(temp_file.path().to_str().unwrap()).unwrap();
+        let result = validator.validate();
 
-        assert!(!result.is_valid(), "空的步骤列表应该失败");
+        assert!(!result.is_valid, "空的步骤列表应该失败");
     }
 }
 
@@ -436,10 +436,10 @@ jobs:
 "#;
 
         let temp_file = test_utils::create_temp_workflow(valid_triggers_yaml);
-        let validator = WorkflowValidator::new();
-        let result = validator.validate_triggers(temp_file.path());
+        let validator = WorkflowValidator::new(temp_file.path().to_str().unwrap()).unwrap();
+        let result = validator.validate();
 
-        assert!(result.is_valid(), "有效的触发条件应该通过验证");
+        assert!(result.is_valid, "有效的触发条件应该通过验证");
     }
 
     #[test]
@@ -458,10 +458,10 @@ jobs:
 "#;
 
         let temp_file = test_utils::create_temp_workflow(invalid_cron_yaml);
-        let validator = WorkflowValidator::new();
-        let result = validator.validate_triggers(temp_file.path());
+        let validator = WorkflowValidator::new(temp_file.path().to_str().unwrap()).unwrap();
+        let result = validator.validate();
 
-        assert!(!result.is_valid(), "无效的cron表达式应该失败");
+        assert!(!result.is_valid, "无效的cron表达式应该失败");
     }
 
     #[test]
@@ -478,10 +478,10 @@ jobs:
 "#;
 
         let temp_file = test_utils::create_temp_workflow(empty_triggers_yaml);
-        let validator = WorkflowValidator::new();
-        let result = validator.validate_triggers(temp_file.path());
+        let validator = WorkflowValidator::new(temp_file.path().to_str().unwrap()).unwrap();
+        let result = validator.validate();
 
-        assert!(!result.is_valid(), "空的触发条件应该失败");
+        assert!(!result.is_valid, "空的触发条件应该失败");
     }
 
     #[test]
@@ -500,10 +500,10 @@ jobs:
 "#;
 
         let temp_file = test_utils::create_temp_workflow(invalid_event_yaml);
-        let validator = WorkflowValidator::new();
-        let result = validator.validate_triggers(temp_file.path());
+        let validator = WorkflowValidator::new(temp_file.path().to_str().unwrap()).unwrap();
+        let result = validator.validate();
 
-        assert!(!result.is_valid(), "无效的事件类型应该失败");
+        assert!(!result.is_valid, "无效的事件类型应该失败");
     }
 }
 
@@ -558,13 +558,13 @@ jobs:
         }
 
         let temp_file = test_utils::create_temp_workflow(&large_yaml);
-        let validator = WorkflowValidator::new();
+        let validator = WorkflowValidator::new(temp_file.path().to_str().unwrap()).unwrap();
         
         let start = Instant::now();
-        let result = validator.validate_all(temp_file.path());
+        let result = validator.validate();
         let duration = start.elapsed();
 
-        assert!(result.is_valid(), "大型工作流应该通过验证");
+        assert!(result.is_valid, "大型工作流应该通过验证");
         assert!(duration.as_millis() < 1000, "验证大型工作流应该少于1秒");
     }
 
@@ -583,10 +583,10 @@ jobs:
 "#;
 
         let temp_file = test_utils::create_temp_workflow(yaml);
-        let validator = WorkflowValidator::new();
-        let result = validator.validate_all(temp_file.path());
+        let validator = WorkflowValidator::new(temp_file.path().to_str().unwrap()).unwrap();
+        let result = validator.validate();
 
-        assert!(result.is_valid(), "内存测试应该通过");
+        assert!(result.is_valid, "内存测试应该通过");
     }
 }
 
@@ -609,11 +609,11 @@ jobs:
 "#, long_name);
 
         let temp_file = test_utils::create_temp_workflow(&yaml);
-        let validator = WorkflowValidator::new();
-        let result = validator.validate_structure(temp_file.path());
+        let validator = WorkflowValidator::new(temp_file.path().to_str().unwrap()).unwrap();
+        let result = validator.validate();
 
         // 长作业名应该被限制或拒绝
-        assert!(!result.is_valid(), "过长的作业名应该失败");
+        assert!(!result.is_valid, "过长的作业名应该失败");
     }
 
     #[test]
@@ -635,10 +635,10 @@ jobs:
         }
 
         let temp_file = test_utils::create_temp_workflow(&yaml);
-        let validator = WorkflowValidator::new();
-        let result = validator.validate_structure(temp_file.path());
+        let validator = WorkflowValidator::new(temp_file.path().to_str().unwrap()).unwrap();
+        let result = validator.validate();
 
-        assert!(!result.is_valid(), "超过最大作业数限制应该失败");
+        assert!(!result.is_valid, "超过最大作业数限制应该失败");
     }
 
     #[test]
@@ -667,9 +667,9 @@ jobs:
 "#;
 
         let temp_file = test_utils::create_temp_workflow(yaml);
-        let validator = WorkflowValidator::new();
-        let result = validator.validate_structure(temp_file.path());
+        let validator = WorkflowValidator::new(temp_file.path().to_str().unwrap()).unwrap();
+        let result = validator.validate();
 
-        assert!(result.is_valid(), "深层嵌套的工作流应该通过验证");
+        assert!(result.is_valid, "深层嵌套的工作流应该通过验证");
     }
 }

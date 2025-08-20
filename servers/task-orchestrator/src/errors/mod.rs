@@ -7,7 +7,7 @@ use axum::{
 use serde::{Serialize, Deserialize};
 use std::collections::HashMap;
 
-use crate::domain::{TaskId, TaskStatus, TaskPriority};
+use crate::domain::{TaskId, TaskStatus, TaskPriority, TaskIdError};
 
 /// 应用错误类型
 #[derive(Debug, Error)]
@@ -44,6 +44,12 @@ pub enum AppError {
     
     #[error("Internal server error: {0}")]
     Internal(String),
+
+    #[error("Invalid task ID: {0}")]
+    InvalidTaskId(#[from] TaskIdError),
+
+    #[error("Date parsing error: {0}")]
+    DateParseError(#[from] chrono::ParseError),
 }
 
 /// 验证错误
@@ -213,6 +219,14 @@ impl IntoResponse for AppError {
             AppError::Internal(err) => (
                 StatusCode::INTERNAL_SERVER_ERROR,
                 ApiError::internal_error(err),
+            ),
+            AppError::InvalidTaskId(err) => (
+                StatusCode::BAD_REQUEST,
+                ApiError::validation(format!("Invalid task ID: {}", err)),
+            ),
+            AppError::DateParseError(err) => (
+                StatusCode::BAD_REQUEST,
+                ApiError::validation(format!("Date parsing error: {}", err)),
             ),
         };
 

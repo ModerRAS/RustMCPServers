@@ -210,6 +210,9 @@ pub struct ValidationOptions {
     /// 自定义格式验证器
     #[serde(default, skip_serializing_if = "HashMap::is_empty")]
     pub custom_formats: HashMap<String, String>,
+    /// 是否启用自定义格式验证
+    #[serde(default = "default_enable_custom_formats")]
+    pub enable_custom_formats: bool,
     /// 是否返回详细错误信息
     #[serde(default = "default_detailed_errors")]
     pub detailed_errors: bool,
@@ -226,6 +229,10 @@ fn default_allow_additional() -> bool {
     true
 }
 
+fn default_enable_custom_formats() -> bool {
+    false
+}
+
 fn default_detailed_errors() -> bool {
     true
 }
@@ -236,6 +243,7 @@ impl Default for ValidationOptions {
             strict_mode: false,
             allow_additional_properties: true,
             custom_formats: HashMap::new(),
+            enable_custom_formats: false,
             detailed_errors: true,
             cache_key: None,
         }
@@ -451,5 +459,32 @@ impl ApiErrorResponse {
     pub fn with_request_id(mut self, request_id: String) -> Self {
         self.request_id = Some(request_id);
         self
+    }
+}
+
+/// 应用状态
+#[derive(Clone)]
+pub struct AppState {
+    /// JSON验证服务
+    pub validator_service: crate::services::JsonValidatorService,
+    /// 服务器配置
+    pub config: crate::config::ServerConfig,
+}
+
+impl AppState {
+    /// 创建新的应用状态
+    pub fn new() -> Self {
+        Self {
+            validator_service: crate::services::JsonValidatorService::new(),
+            config: crate::config::ServerConfig::default(),
+        }
+    }
+
+    /// 使用配置创建新的应用状态
+    pub fn with_config(config: crate::config::ServerConfig) -> Self {
+        Self {
+            validator_service: crate::services::JsonValidatorService::new(),
+            config,
+        }
     }
 }

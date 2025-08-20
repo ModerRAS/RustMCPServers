@@ -7,14 +7,14 @@ use crate::domain::{
     WorkDirectory, Prompt, TaskTag, WorkerId, CreateTaskRequest, 
     CompleteTaskRequest, AcquireTaskRequest, TaskError,
 };
-use crate::infrastructure::{TaskRepository, SqliteTaskRepository, SqliteLockManager};
+use crate::infrastructure::{TaskRepository, SqliteTaskRepository, SqliteLockManager, LockManager};
 use crate::errors::{AppError, AppResult};
 use crate::models::{TaskFilter, TaskStatistics};
 
 /// 任务服务
 pub struct TaskService {
-    task_repository: Arc<SqliteTaskRepository>,
-    lock_manager: Arc<SqliteLockManager>,
+    task_repository: Arc<dyn TaskRepository>,
+    lock_manager: Arc<dyn LockManager>,
     max_retries: u32,
     task_timeout: u64,
 }
@@ -22,8 +22,8 @@ pub struct TaskService {
 impl TaskService {
     /// 创建新的任务服务
     pub fn new(
-        task_repository: Arc<SqliteTaskRepository>,
-        lock_manager: Arc<SqliteLockManager>,
+        task_repository: Arc<dyn TaskRepository>,
+        lock_manager: Arc<dyn LockManager>,
         max_retries: u32,
         task_timeout: u64,
     ) -> Self {

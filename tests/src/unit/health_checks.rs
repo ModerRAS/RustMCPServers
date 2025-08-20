@@ -20,7 +20,7 @@ mod ci_health_check_tests {
         let health_checker = CIHealthChecker::new();
         let result = health_checker.check_system_health();
         
-        assert!(result.is_healthy(), "CI系统应该是健康的");
+        assert!(result.is_healthy, "CI系统应该是健康的");
         assert!(result.checks.len() > 0, "应该执行多个健康检查");
         
         // 检查关键组件
@@ -41,7 +41,7 @@ mod ci_health_check_tests {
         
         let result = health_checker.check_workflows_health(&workflow_paths);
         
-        assert!(result.is_healthy(), "工作流应该是健康的");
+        assert!(result.is_healthy, "工作流应该是健康的");
         assert_eq!(result.checked_workflows, workflow_paths.len(), "应该检查所有工作流");
         
         // 检查是否有工作流失败
@@ -56,7 +56,7 @@ mod ci_health_check_tests {
         let health_checker = CIHealthChecker::new();
         let result = health_checker.check_performance_health();
         
-        assert!(result.is_healthy(), "CI性能应该是健康的");
+        assert!(result.is_healthy, "CI性能应该是健康的");
         assert!(result.response_time_ms < 5000, "响应时间应该小于5秒");
         assert!(result.memory_usage_mb < 1024, "内存使用应该小于1GB");
         assert!(result.cpu_usage_percent < 80.0, "CPU使用率应该小于80%");
@@ -67,7 +67,7 @@ mod ci_health_check_tests {
         let health_checker = CIHealthChecker::new();
         let result = health_checker.check_security_health();
         
-        assert!(result.is_healthy(), "CI安全应该是健康的");
+        assert!(result.is_healthy, "CI安全应该是健康的");
         assert!(result.vulnerability_count == 0, "不应该有漏洞");
         assert!(result.secret_leaks == 0, "不应该有密钥泄露");
         assert!(result.compliance_score >= 90.0, "合规分数应该至少90%");
@@ -78,7 +78,7 @@ mod ci_health_check_tests {
         let health_checker = CIHealthChecker::new();
         let result = health_checker.check_resource_health();
         
-        assert!(result.is_healthy(), "CI资源应该是健康的");
+        assert!(result.is_healthy, "CI资源应该是健康的");
         assert!(result.disk_usage_percent < 90.0, "磁盘使用率应该小于90%");
         assert!(result.network_latency_ms < 100, "网络延迟应该小于100ms");
         assert!(result.available_builders > 0, "应该有可用的构建器");
@@ -89,7 +89,7 @@ mod ci_health_check_tests {
         let health_checker = CIHealthChecker::new();
         let result = health_checker.check_health_trends();
         
-        assert!(result.is_healthy(), "CI健康趋势应该是良好的");
+        assert!(result.is_healthy, "CI健康趋势应该是良好的");
         assert!(result.success_rate_trend >= 0.0, "成功率趋势应该是非负的");
         assert!(result.performance_trend <= 0.0, "性能趋势应该是非正的（改进）");
         assert!(result.error_rate_trend <= 0.0, "错误率趋势应该是非正的（改进）");
@@ -142,7 +142,7 @@ checksum = "def456"
         
         let result = checker.check_cargo_lock_consistency(cargo_toml_file.path(), cargo_lock_file.path());
         
-        assert!(result.is_consistent(), "Cargo.lock应该是一致的");
+        assert!(result.is_consistent, "Cargo.lock应该是一致的");
         assert!(result.mismatches.is_empty(), "不应该有不匹配的依赖");
     }
 
@@ -189,7 +189,7 @@ serde = { workspace = true }
             &[package1_file.path(), package2_file.path()]
         );
         
-        assert!(result.is_consistent(), "工作空间依赖应该是一致的");
+        assert!(result.is_consistent, "工作空间依赖应该是一致的");
         assert!(result.inconsistencies.is_empty(), "不应该有不一致的依赖");
     }
 
@@ -242,7 +242,7 @@ checksum = "old_version"
         
         let result = checker.check_cargo_lock_consistency(cargo_toml_file.path(), cargo_lock_file.path());
         
-        assert!(!result.is_consistent(), "版本冲突应该被检测到");
+        assert!(!result.is_consistent, "版本冲突应该被检测到");
         assert!(!result.mismatches.is_empty(), "应该有不匹配的依赖");
         
         let reqwest_mismatch: Vec<_> = result.mismatches.iter()
@@ -302,7 +302,7 @@ version = "2.0.0"  # package-b使用这个版本
         
         let result = checker.check_cargo_lock_consistency(cargo_toml_file.path(), cargo_lock_file.path());
         
-        assert!(!result.is_consistent(), "传递依赖冲突应该被检测到");
+        assert!(!result.is_consistent, "传递依赖冲突应该被检测到");
         assert!(!result.mismatches.is_empty(), "应该有不匹配的传递依赖");
     }
 
@@ -355,7 +355,7 @@ dependencies = [
         
         let result = checker.check_feature_flag_consistency(cargo_toml_file.path(), cargo_lock_file.path());
         
-        assert!(result.is_consistent(), "特性标志应该是一致的");
+        assert!(result.is_consistent, "特性标志应该是一致的");
         assert!(result.inconsistent_features.is_empty(), "不应该有不一致的特性标志");
     }
 }
@@ -378,7 +378,7 @@ mod workspace_validation_tests {
         
         let result = validator.validate_workspace_structure(project_root.path());
         
-        assert!(result.is_valid(), "工作空间结构应该是有效的");
+        assert!(result.is_valid, "工作空间结构应该是有效的");
         assert!(result.missing_directories.is_empty(), "不应该缺少目录");
         assert!(result.missing_files.is_empty(), "不应该缺少文件");
     }
@@ -404,7 +404,7 @@ resolver = "2"
         
         let result = validator.validate_workspace_members(workspace_file.path(), temp_dir.path());
         
-        assert!(result.is_valid(), "工作空间成员应该是有效的");
+        assert!(result.is_valid, "工作空间成员应该是有效的");
         assert_eq!(result.valid_members, 2, "应该有2个有效成员");
         assert_eq!(result.missing_members.len(), 1, "应该有1个缺失成员");
         assert!(result.missing_members.contains(&"package3".to_string()), "package3应该被标记为缺失");
@@ -428,7 +428,7 @@ resolver = "2"
         
         let result = validator.validate_workspace_compilation(workspace_root.path());
         
-        assert!(result.is_valid(), "工作空间应该能够编译");
+        assert!(result.is_valid, "工作空间应该能够编译");
         assert!(result.compilation_errors.is_empty(), "不应该有编译错误");
     }
 
@@ -455,7 +455,7 @@ resolver = "2"
         
         let result = validator.validate_workspace_tests(workspace_root.path());
         
-        assert!(result.is_valid(), "工作空间测试应该通过");
+        assert!(result.is_valid, "工作空间测试应该通过");
         assert!(result.failed_tests.is_empty(), "不应该有失败的测试");
         assert!(result.test_count > 0, "应该有测试");
     }
@@ -495,7 +495,7 @@ mod network_connectivity_tests {
         let checker = NetworkChecker::new();
         let result = checker.check_github_connectivity();
         
-        assert!(result.is_connected(), "应该能够连接到GitHub");
+        assert!(result.is_connected, "应该能够连接到GitHub");
         assert!(result.response_time_ms < 5000, "GitHub响应时间应该小于5秒");
         assert!(result.status_code == 200, "GitHub应该返回200状态码");
     }
@@ -505,7 +505,7 @@ mod network_connectivity_tests {
         let checker = NetworkChecker::new();
         let result = checker.check_crates_io_connectivity();
         
-        assert!(result.is_connected(), "应该能够连接到crates.io");
+        assert!(result.is_connected, "应该能够连接到crates.io");
         assert!(result.response_time_ms < 3000, "crates.io响应时间应该小于3秒");
         assert!(result.status_code == 200, "crates.io应该返回200状态码");
     }
@@ -515,7 +515,7 @@ mod network_connectivity_tests {
         let checker = NetworkChecker::new();
         let result = checker.check_docker_registry_connectivity();
         
-        assert!(result.is_connected(), "应该能够连接到Docker registry");
+        assert!(result.is_connected, "应该能够连接到Docker registry");
         assert!(result.response_time_ms < 3000, "Docker registry响应时间应该小于3秒");
         assert!(result.status_code == 200, "Docker registry应该返回200状态码");
     }
@@ -525,7 +525,7 @@ mod network_connectivity_tests {
         let checker = NetworkChecker::new();
         let result = checker.check_package_registry_connectivity();
         
-        assert!(result.is_connected(), "应该能够连接到package registry");
+        assert!(result.is_connected, "应该能够连接到package registry");
         assert!(result.response_time_ms < 3000, "Package registry响应时间应该小于3秒");
         assert!(result.status_code == 200, "Package registry应该返回200状态码");
     }
@@ -535,7 +535,7 @@ mod network_connectivity_tests {
         let checker = NetworkChecker::new();
         let result = checker.check_dns_resolution();
         
-        assert!(result.is_successful(), "DNS解析应该成功");
+        assert!(result.is_successful, "DNS解析应该成功");
         assert!(!result.resolved_addresses.is_empty(), "应该解析到地址");
         assert!(result.resolution_time_ms < 1000, "DNS解析时间应该小于1秒");
     }
@@ -545,7 +545,7 @@ mod network_connectivity_tests {
         let checker = NetworkChecker::new();
         let result = checker.check_network_latency();
         
-        assert!(result.is_healthy(), "网络延迟应该是健康的");
+        assert!(result.is_healthy, "网络延迟应该是健康的");
         assert!(result.average_latency_ms < 100, "平均延迟应该小于100ms");
         assert!(result.max_latency_ms < 500, "最大延迟应该小于500ms");
         assert!(result.packet_loss_percent < 5.0, "丢包率应该小于5%");
@@ -556,7 +556,7 @@ mod network_connectivity_tests {
         let checker = NetworkChecker::new();
         let result = checker.check_bandwidth();
         
-        assert!(result.is_sufficient(), "带宽应该是足够的");
+        assert!(result.is_sufficient, "带宽应该是足够的");
         assert!(result.download_speed_mbps > 1.0, "下载速度应该大于1Mbps");
         assert!(result.upload_speed_mbps > 0.5, "上传速度应该大于0.5Mbps");
     }
@@ -569,7 +569,7 @@ mod network_connectivity_tests {
         // 注意：如果没有配置代理，这个测试可能失败
         // 在实际实现中，应该根据环境配置跳过这个测试
         if result.proxy_configured {
-            assert!(result.is_connected(), "如果配置了代理，应该能够连接");
+            assert!(result.is_connected, "如果配置了代理，应该能够连接");
         }
     }
 
@@ -578,7 +578,7 @@ mod network_connectivity_tests {
         let checker = NetworkChecker::new();
         let result = checker.check_firewall_connectivity();
         
-        assert!(result.is_accessible(), "防火墙应该允许必要的连接");
+        assert!(result.is_accessible, "防火墙应该允许必要的连接");
         assert!(!result.blocked_ports.is_empty(), "应该检查必要的端口");
         
         // 检查关键端口

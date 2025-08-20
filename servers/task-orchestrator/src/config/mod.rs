@@ -2,6 +2,7 @@ use serde::{Deserialize, Serialize};
 use config::{Config, ConfigError, Environment as ConfigEnv, File};
 use std::path::PathBuf;
 use crate::errors::AppError;
+use std::env;
 
 /// 数据库配置
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -23,7 +24,7 @@ pub struct DatabaseConfig {
 impl Default for DatabaseConfig {
     fn default() -> Self {
         Self {
-            url: "sqlite:///data/tasks.db".to_string(),
+            url: "sqlite://tasks.db".to_string(),
             max_connections: 100,
             min_connections: 10,
             connection_timeout: 30,

@@ -16,7 +16,7 @@ mod build_time_monitoring_tests {
 
     #[test]
     fn test_build_time_measurement() {
-        let monitor = BuildMonitor::new();
+        let mut monitor = BuildMonitor::new();
         let build_id = "test-build-1";
         
         let start_time = Instant::now();
@@ -34,7 +34,7 @@ mod build_time_monitoring_tests {
 
     #[test]
     fn test_build_time_thresholds() {
-        let monitor = BuildMonitor::new();
+        let mut monitor = BuildMonitor::new();
         monitor.set_time_threshold(Duration::from_secs(30));
         
         let build_id = "slow-build";
@@ -57,7 +57,7 @@ mod build_time_monitoring_tests {
 
     #[test]
     fn test_build_time_history() {
-        let monitor = BuildMonitor::new();
+        let mut monitor = BuildMonitor::new();
         
         // 模拟多个构建
         for i in 0..5 {
@@ -77,7 +77,7 @@ mod build_time_monitoring_tests {
 
     #[test]
     fn test_concurrent_builds() {
-        let monitor = BuildMonitor::new();
+        let mut monitor = BuildMonitor::new();
         
         // 模拟并发构建
         let mut handles = vec![];
@@ -102,7 +102,7 @@ mod build_time_monitoring_tests {
 
     #[test]
     fn test_build_timeout_detection() {
-        let monitor = BuildMonitor::new();
+        let mut monitor = BuildMonitor::new();
         monitor.set_timeout(Duration::from_millis(100));
         
         let build_id = "timeout-build";
@@ -125,7 +125,7 @@ mod resource_usage_tracking_tests {
 
     #[test]
     fn test_cpu_usage_tracking() {
-        let tracker = ResourceTracker::new();
+        let mut tracker = ResourceTracker::new();
         let build_id = "cpu-test-build";
         
         tracker.start_tracking(build_id);
@@ -148,7 +148,7 @@ mod resource_usage_tracking_tests {
 
     #[test]
     fn test_memory_usage_tracking() {
-        let tracker = ResourceTracker::new();
+        let mut tracker = ResourceTracker::new();
         let build_id = "memory-test-build";
         
         tracker.start_tracking(build_id);
@@ -172,7 +172,7 @@ mod resource_usage_tracking_tests {
 
     #[test]
     fn test_disk_io_tracking() {
-        let tracker = ResourceTracker::new();
+        let mut tracker = ResourceTracker::new();
         let build_id = "disk-test-build";
         
         tracker.start_tracking(build_id);
@@ -193,7 +193,7 @@ mod resource_usage_tracking_tests {
 
     #[test]
     fn test_network_usage_tracking() {
-        let tracker = ResourceTracker::new();
+        let mut tracker = ResourceTracker::new();
         let build_id = "network-test-build";
         
         tracker.start_tracking(build_id);
@@ -214,7 +214,7 @@ mod resource_usage_tracking_tests {
 
     #[test]
     fn test_resource_thresholds() {
-        let tracker = ResourceTracker::new();
+        let mut tracker = ResourceTracker::new();
         tracker.set_cpu_threshold(80.0);
         tracker.set_memory_threshold(1024.0); // 1GB
         
@@ -353,7 +353,7 @@ mod performance_metrics_tests {
 
     #[test]
     fn test_metrics_collection() {
-        let collector = MetricsCollector::new();
+        let mut collector = MetricsCollector::new();
         let build_id = "metrics-test-build";
         
         collector.start_collection(build_id);
@@ -376,7 +376,7 @@ mod performance_metrics_tests {
 
     #[test]
     fn test_metrics_aggregation() {
-        let collector = MetricsCollector::new();
+        let mut collector = MetricsCollector::new();
         
         // 模拟多个构建的指标
         for i in 0..5 {
@@ -399,7 +399,7 @@ mod performance_metrics_tests {
 
     #[test]
     fn test_metrics_trends() {
-        let collector = MetricsCollector::new();
+        let mut collector = MetricsCollector::new();
         
         // 模拟时间序列指标
         let timestamps = vec![
@@ -425,7 +425,7 @@ mod performance_metrics_tests {
 
     #[test]
     fn test_metrics_alerting() {
-        let collector = MetricsCollector::new();
+        let mut collector = MetricsCollector::new();
         collector.set_threshold("build_time", 120.0);
         collector.set_threshold("cpu_usage", 80.0);
         
@@ -447,7 +447,7 @@ mod performance_metrics_tests {
 
     #[test]
     fn test_metrics_export() {
-        let collector = MetricsCollector::new();
+        let mut collector = MetricsCollector::new();
         let build_id = "export-test-build";
         
         collector.start_collection(build_id);

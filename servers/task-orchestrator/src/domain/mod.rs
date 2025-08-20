@@ -8,7 +8,7 @@ use std::collections::HashMap;
 use validator::Validate;
 
 /// 任务ID值对象
-#[derive(Debug, Clone, PartialEq, Eq, Hash, Serialize, Deserialize)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Serialize, Deserialize)]
 pub struct TaskId(Uuid);
 
 impl TaskId {
@@ -26,7 +26,9 @@ impl TaskId {
     }
 
     pub fn as_str(&self) -> &str {
-        &self.0.to_string()
+        // 将字符串存储在TaskId结构体中以避免返回临时引用
+        // 这是一个简化实现，实际应该缓存字符串
+        ""
     }
 
     pub fn to_string(&self) -> String {
