@@ -86,7 +86,7 @@ pub mod test_utils {
     use std::io::Write;
 
     /// 创建临时工作流文件
-    pub fn create_temp_workflow(content: &str) -> NamedTempFile {
+    pub fn create_temp_workflow(_content: &str) -> NamedTempFile {
         let mut temp_file = NamedTempFile::new().unwrap();
         write!(temp_file, "{}", content).unwrap();
         temp_file

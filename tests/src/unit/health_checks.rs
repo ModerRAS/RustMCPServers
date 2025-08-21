@@ -6,9 +6,6 @@
 //! - 工作空间验证
 //! - 网络连接性
 
-use std::path::Path;
-use tempfile::NamedTempFile;
-use crate::test_utils;
 
 /// CI健康检查测试
 #[cfg(test)]
@@ -690,7 +687,7 @@ impl DependencyChecker {
         }
     }
 
-    pub fn check_cargo_lock_consistency(&self, cargo_toml_path: &Path, cargo_lock_path: &Path) -> DependencyConsistencyResult {
+    pub fn check_cargo_lock_consistency(&self, _cargo_toml_path: &Path, _cargo_lock_path: &Path) -> DependencyConsistencyResult {
         // 简化实现
         DependencyConsistencyResult {
             is_consistent: true,
@@ -698,7 +695,7 @@ impl DependencyChecker {
         }
     }
 
-    pub fn check_workspace_consistency(&self, workspace_path: &Path, member_paths: &[&Path]) -> WorkspaceConsistencyResult {
+    pub fn check_workspace_consistency(&self, _workspace_path: &Path, member_paths: &[&Path]) -> WorkspaceConsistencyResult {
         // 简化实现
         WorkspaceConsistencyResult {
             is_consistent: true,
@@ -706,7 +703,7 @@ impl DependencyChecker {
         }
     }
 
-    pub fn check_feature_flag_consistency(&self, cargo_toml_path: &Path, cargo_lock_path: &Path) -> FeatureConsistencyResult {
+    pub fn check_feature_flag_consistency(&self, _cargo_toml_path: &Path, _cargo_lock_path: &Path) -> FeatureConsistencyResult {
         // 简化实现
         FeatureConsistencyResult {
             is_consistent: true,
@@ -728,7 +725,7 @@ impl WorkspaceValidator {
         }
     }
 
-    pub fn validate_workspace_structure(&self, workspace_root: &Path) -> WorkspaceStructureResult {
+    pub fn validate_workspace_structure(&self, _workspace_root: &Path) -> WorkspaceStructureResult {
         // 简化实现
         WorkspaceStructureResult {
             is_valid: true,
@@ -737,7 +734,7 @@ impl WorkspaceValidator {
         }
     }
 
-    pub fn validate_workspace_members(&self, workspace_toml_path: &Path, workspace_root: &Path) -> WorkspaceMembersResult {
+    pub fn validate_workspace_members(&self, _workspace_toml_path: &Path, _workspace_root: &Path) -> WorkspaceMembersResult {
         // 简化实现
         WorkspaceMembersResult {
             is_valid: true,
@@ -746,7 +743,7 @@ impl WorkspaceValidator {
         }
     }
 
-    pub fn validate_workspace_compilation(&self, workspace_root: &Path) -> WorkspaceCompilationResult {
+    pub fn validate_workspace_compilation(&self, _workspace_root: &Path) -> WorkspaceCompilationResult {
         // 简化实现
         WorkspaceCompilationResult {
             is_valid: true,
@@ -754,7 +751,7 @@ impl WorkspaceValidator {
         }
     }
 
-    pub fn validate_workspace_tests(&self, workspace_root: &Path) -> WorkspaceTestResult {
+    pub fn validate_workspace_tests(&self, _workspace_root: &Path) -> WorkspaceTestResult {
         // 简化实现
         WorkspaceTestResult {
             is_valid: true,
@@ -763,7 +760,7 @@ impl WorkspaceValidator {
         }
     }
 
-    pub fn validate_workspace_linting(&self, workspace_root: &Path) -> WorkspaceLintResult {
+    pub fn validate_workspace_linting(&self, _workspace_root: &Path) -> WorkspaceLintResult {
         // 简化实现
         WorkspaceLintResult {
             lint_warnings: vec![],

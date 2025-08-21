@@ -7,7 +7,7 @@ use axum::{
 use serde::{Serialize, Deserialize};
 use std::collections::HashMap;
 
-use crate::domain::{TaskId, TaskStatus, TaskPriority, TaskIdError};
+use crate::domain::{TaskId, TaskStatus, TaskPriority, TaskIdError, TaskTagError, WorkerIdError, WorkDirectoryError, PromptError};
 
 /// 应用错误类型
 #[derive(Debug, Error)]
@@ -50,6 +50,33 @@ pub enum AppError {
 
     #[error("Date parsing error: {0}")]
     DateParseError(#[from] chrono::ParseError),
+
+    #[error("Anyhow error: {0}")]
+    Anyhow(#[from] anyhow::Error),
+
+    #[error("Task status error: {0}")]
+    TaskStatus(#[from] crate::domain::TaskStatusError),
+
+    #[error("Task priority error: {0}")]
+    TaskPriority(#[from] crate::domain::TaskPriorityError),
+
+    #[error("Task error: {0}")]
+    Task(#[from] crate::domain::TaskError),
+
+    #[error("Task tag error: {0}")]
+    TaskTag(#[from] TaskTagError),
+
+    #[error("Worker ID error: {0}")]
+    WorkerId(#[from] WorkerIdError),
+
+    #[error("Work directory error: {0}")]
+    WorkDirectory(#[from] WorkDirectoryError),
+
+    #[error("Prompt error: {0}")]
+    Prompt(#[from] PromptError),
+
+    #[error("Database migration error: {0}")]
+    Migration(#[from] sqlx::migrate::MigrateError),
 }
 
 /// 验证错误
@@ -69,6 +96,9 @@ pub enum ValidationError {
     
     #[error("Invalid worker ID: {0}")]
     InvalidWorkerId(String),
+    
+    #[error("Invalid validation: {0}")]
+    InvalidValidation(String),
     
     #[error("Missing required field: {0}")]
     MissingField(String),
@@ -228,6 +258,42 @@ impl IntoResponse for AppError {
                 StatusCode::BAD_REQUEST,
                 ApiError::validation(format!("Date parsing error: {}", err)),
             ),
+            AppError::Anyhow(err) => (
+                StatusCode::INTERNAL_SERVER_ERROR,
+                ApiError::internal_error(format!("Internal error: {}", err)),
+            ),
+            AppError::TaskStatus(err) => (
+                StatusCode::BAD_REQUEST,
+                ApiError::validation(format!("Invalid task status: {}", err)),
+            ),
+            AppError::TaskPriority(err) => (
+                StatusCode::BAD_REQUEST,
+                ApiError::validation(format!("Invalid task priority: {}", err)),
+            ),
+            AppError::Task(err) => (
+                StatusCode::BAD_REQUEST,
+                ApiError::validation(format!("Task error: {}", err)),
+            ),
+            AppError::TaskTag(err) => (
+                StatusCode::BAD_REQUEST,
+                ApiError::validation(format!("Task tag error: {}", err)),
+            ),
+            AppError::WorkerId(err) => (
+                StatusCode::BAD_REQUEST,
+                ApiError::validation(format!("Worker ID error: {}", err)),
+            ),
+            AppError::WorkDirectory(err) => (
+                StatusCode::BAD_REQUEST,
+                ApiError::validation(format!("Work directory error: {}", err)),
+            ),
+            AppError::Prompt(err) => (
+                StatusCode::BAD_REQUEST,
+                ApiError::validation(format!("Prompt error: {}", err)),
+            ),
+            AppError::Migration(err) => (
+                StatusCode::INTERNAL_SERVER_ERROR,
+                ApiError::internal_error(format!("Database migration error: {}", err)),
+            ),
         };
 
         let response = ApiResponse::<()>::error(api_error);
@@ -245,7 +311,7 @@ impl From<validator::ValidationErrors> for ValidationError {
             .field_errors()
             .iter()
             .flat_map(|(field, errors)| {
-                errors.iter().map(|error| {
+                errors.iter().map(move |error| {
                     format!("{}: {}", field, error.message.as_ref().unwrap_or(&"invalid".into()))
                 })
             })

@@ -1,5 +1,4 @@
 use std::fs;
-use std::path::Path;
 use regex::Regex;
 use serde::{Deserialize, Serialize};
 
@@ -38,7 +37,7 @@ pub enum Severity {
 
 impl SecurityTester {
     /// 创建新的安全测试器
-    pub fn new(workflow_path: &str) -> Result<Self, Box<dyn std::error::Error>> {
+    pub fn new(_workflow_path: &str) -> Result<Self, Box<dyn std::error::Error>> {
         let content = fs::read_to_string(workflow_path)?;
         Ok(Self {
             workflow_path: workflow_path.to_string(),

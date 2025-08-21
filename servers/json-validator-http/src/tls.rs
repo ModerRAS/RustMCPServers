@@ -7,7 +7,7 @@ use std::fs::File;
 use std::io::BufReader;
 use std::path::Path;
 use std::os::unix::fs::PermissionsExt;
-use tracing::{debug, error, info, warn};
+use tracing::{debug, info, warn};
 
 /// TLS配置
 #[derive(Debug, Clone)]
@@ -190,7 +190,7 @@ impl TlsConfig {
         let private_key = self.load_private_key()?;
 
         // 创建配置构建器
-        let mut config_builder = ServerConfig::builder()
+        let config_builder = ServerConfig::builder()
             .with_safe_defaults()
             .with_no_client_auth();
 
@@ -200,7 +200,7 @@ impl TlsConfig {
             // 暂时跳过客户端证书验证的配置
         }
 
-        let mut server_config = config_builder
+        let server_config = config_builder
             .with_single_cert(certs, private_key)
             .map_err(|e| anyhow!("Failed to create server config: {}", e))?;
 

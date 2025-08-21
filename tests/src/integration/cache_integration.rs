@@ -5,8 +5,6 @@
 //! - 并行构建缓存测试
 //! - 缓存性能影响测试
 
-use std::path::Path;
-use tempfile::TempDir;
 use crate::unit::cache_strategy::CacheStrategy;
 use crate::unit::build_monitoring::BuildMonitor;
 
@@ -25,7 +23,7 @@ impl CacheIntegrationTester {
         }
     }
 
-    pub fn test_cache_dependency_integration(&self, workspace_root: &Path) -> CacheDependencyResult {
+    pub fn test_cache_dependency_integration(&self, _workspace_root: &Path) -> CacheDependencyResult {
         // 简化实现
         CacheDependencyResult {
             integration_successful: true,
@@ -36,7 +34,7 @@ impl CacheIntegrationTester {
         }
     }
 
-    pub fn test_parallel_build_cache(&self, workspace_root: &Path, job_count: usize) -> ParallelBuildCacheResult {
+    pub fn test_parallel_build_cache(&self, _workspace_root: &Path, _job_count: usize) -> ParallelBuildCacheResult {
         // 简化实现
         ParallelBuildCacheResult {
             parallel_builds_successful: true,
@@ -47,7 +45,7 @@ impl CacheIntegrationTester {
         }
     }
 
-    pub fn test_cache_performance_impact(&self, workspace_root: &Path) -> CachePerformanceResult {
+    pub fn test_cache_performance_impact(&self, _workspace_root: &Path) -> CachePerformanceResult {
         // 简化实现
         CachePerformanceResult {
             performance_impact_positive: true,
@@ -83,7 +81,7 @@ impl SecurityIntegrationTester {
         }
     }
 
-    pub fn test_security_pipeline_integration(&self, workspace_root: &Path) -> SecurityPipelineResult {
+    pub fn test_security_pipeline_integration(&self, _workspace_root: &Path) -> SecurityPipelineResult {
         // 简化实现
         SecurityPipelineResult {
             pipeline_integration_successful: true,
@@ -94,7 +92,7 @@ impl SecurityIntegrationTester {
         }
     }
 
-    pub fn test_vulnerability_scanning_integration(&self, workspace_root: &Path) -> VulnerabilityScanningResult {
+    pub fn test_vulnerability_scanning_integration(&self, _workspace_root: &Path) -> VulnerabilityScanningResult {
         // 简化实现
         VulnerabilityScanningResult {
             scanning_integration_successful: true,
@@ -105,7 +103,7 @@ impl SecurityIntegrationTester {
         }
     }
 
-    pub fn test_compliance_checking_integration(&self, workspace_root: &Path) -> ComplianceCheckingResult {
+    pub fn test_compliance_checking_integration(&self, _workspace_root: &Path) -> ComplianceCheckingResult {
         // 简化实现
         ComplianceCheckingResult {
             compliance_integration_successful: true,
@@ -141,7 +139,7 @@ impl MonitoringIntegrationTester {
         }
     }
 
-    pub fn test_monitoring_pipeline_integration(&self, workspace_root: &Path) -> MonitoringPipelineResult {
+    pub fn test_monitoring_pipeline_integration(&self, _workspace_root: &Path) -> MonitoringPipelineResult {
         // 简化实现
         MonitoringPipelineResult {
             pipeline_integration_successful: true,
@@ -152,7 +150,7 @@ impl MonitoringIntegrationTester {
         }
     }
 
-    pub fn test_alerting_integration(&self, workspace_root: &Path) -> AlertingIntegrationResult {
+    pub fn test_alerting_integration(&self, _workspace_root: &Path) -> AlertingIntegrationResult {
         // 简化实现
         AlertingIntegrationResult {
             alerting_integration_successful: true,
@@ -163,7 +161,7 @@ impl MonitoringIntegrationTester {
         }
     }
 
-    pub fn test_metrics_collection_integration(&self, workspace_root: &Path) -> MetricsCollectionResult {
+    pub fn test_metrics_collection_integration(&self, _workspace_root: &Path) -> MetricsCollectionResult {
         // 简化实现
         MetricsCollectionResult {
             metrics_integration_successful: true,

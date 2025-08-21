@@ -1,8 +1,8 @@
 use tracing::{info, warn, error, debug, instrument, Span};
-use tracing_subscriber::{layer::SubscriberExt, util::SubscriberInitExt, EnvFilter};
+use tracing_subscriber::{layer::SubscriberExt, EnvFilter};
 use std::path::Path;
 
-use crate::config::{LoggingConfig, AppConfig};
+use crate::config::LoggingConfig;
 
 /// 日志管理器
 pub struct LogManager {
@@ -326,8 +326,8 @@ impl LoggingMiddleware {
     }
 }
 
-impl tower_http::trace::MakeSpan for LoggingMiddleware {
-    fn make_span<B>(&mut self, request: &axum::http::Request<B>) -> Span {
+impl<B> tower_http::trace::MakeSpan<B> for LoggingMiddleware {
+    fn make_span(&mut self, request: &axum::http::Request<B>) -> Span {
         let user_agent = request.headers()
             .get("user-agent")
             .and_then(|h| h.to_str().ok())
@@ -427,28 +427,28 @@ impl MetricsCollector {
     }
 
     /// 记录任务创建
-    pub fn record_task_created(&self, priority: &str) {
+    pub fn record_task_created(&self, _priority: &str) {
         self.task_created_counter.inc();
     }
 
     /// 记录任务完成
-    pub fn record_task_completed(&self, priority: &str, processing_time: f64) {
+    pub fn record_task_completed(&self, _priority: &str, processing_time: f64) {
         self.task_completed_counter.inc();
         self.response_time_histogram.observe(processing_time);
     }
 
     /// 记录任务失败
-    pub fn record_task_failed(&self, priority: &str, error_type: &str) {
+    pub fn record_task_failed(&self, _priority: &str, _error_type: &str) {
         self.task_failed_counter.inc();
     }
 
     /// 记录任务取消
-    pub fn record_task_cancelled(&self, reason: &str) {
+    pub fn record_task_cancelled(&self, _reason: &str) {
         self.task_cancelled_counter.inc();
     }
 
     /// 记录任务获取
-    pub fn record_task_acquired(&self, worker_id: &str) {
+    pub fn record_task_acquired(&self, _worker_id: &str) {
         self.task_acquired_counter.inc();
     }
 
@@ -463,12 +463,12 @@ impl MetricsCollector {
     }
 
     /// 记录错误
-    pub fn record_error(&self, error_type: &str, endpoint: &str) {
+    pub fn record_error(&self, _error_type: &str, _endpoint: &str) {
         self.error_counter.inc();
     }
 
     /// 记录数据库查询时间
-    pub fn record_database_query(&self, operation: &str, table: &str, duration: f64) {
+    pub fn record_database_query(&self, _operation: &str, _table: &str, duration: f64) {
         self.database_query_duration.observe(duration);
     }
 

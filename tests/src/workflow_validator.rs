@@ -1,5 +1,4 @@
 use std::fs;
-use std::path::Path;
 use serde::{Deserialize, Serialize};
 use regex::Regex;
 
@@ -20,7 +19,7 @@ pub struct WorkflowValidationResult {
 
 impl WorkflowValidator {
     /// 创建新的验证器实例
-    pub fn new(workflow_path: &str) -> Result<Self, Box<dyn std::error::Error>> {
+    pub fn new(_workflow_path: &str) -> Result<Self, Box<dyn std::error::Error>> {
         let content = fs::read_to_string(workflow_path)?;
         Ok(Self {
             workflow_path: workflow_path.to_string(),
@@ -38,7 +37,7 @@ impl WorkflowValidator {
         };
 
         // 基础语法检查
-        self.validate_syntax(&mut result);
+        let yaml_value = self.validate_syntax(&mut result);
         
         // 安全性检查
         self.validate_security(&mut result);
@@ -49,18 +48,21 @@ impl WorkflowValidator {
         // 最佳实践检查
         self.validate_best_practices(&mut result);
 
+        // 优化实现 - 检查作业依赖关系
+        self.validate_job_dependencies(&yaml_value, &mut result);
+        
         result.is_valid = result.errors.is_empty();
         result
     }
 
     /// 验证基础语法
-    fn validate_syntax(&self, result: &mut WorkflowValidationResult) {
+    fn validate_syntax(&self, result: &mut WorkflowValidationResult) -> serde_yaml::Value {
         // 检查YAML格式
         let yaml_value = match serde_yaml::from_str::<serde_yaml::Value>(&self.content) {
             Ok(value) => value,
             Err(e) => {
                 result.errors.push(format!("Invalid YAML syntax: {}", e));
-                return;
+                return serde_yaml::Value::Null;
             }
         };
 
@@ -71,6 +73,92 @@ impl WorkflowValidator {
                 result.errors.push(format!("Missing required field: {}", field));
             }
         }
+
+        // 优化实现 - 检查工作流结构
+        if let Some(jobs) = yaml_value.get("jobs") {
+            if let Some(jobs_map) = jobs.as_mapping() {
+                // 检查空的作业部分
+                if jobs_map.is_empty() {
+                    result.errors.push("Empty jobs section".to_string());
+                }
+
+                // 检查每个作业的配置
+                for (job_name, job_config) in jobs_map {
+                    if let Some(job_map) = job_config.as_mapping() {
+                        // 检查无效的作业配置
+                        if !job_map.contains_key("runs-on") && !job_map.contains_key("uses") {
+                            result.errors.push(format!("Invalid job configuration for job '{}'", job_name.as_str().unwrap_or("unknown")));
+                        }
+
+                        // 检查步骤配置
+                        if let Some(steps) = job_map.get("steps") {
+                            if let Some(steps_array) = steps.as_sequence() {
+                                // 检查空的步骤列表
+                                if steps_array.is_empty() {
+                                    result.errors.push("Empty steps list".to_string());
+                                }
+
+                                // 检查每个步骤的配置
+                                for (step_index, step) in steps_array.iter().enumerate() {
+                                    if let Some(step_map) = step.as_mapping() {
+                                        let has_run = step_map.contains_key("run");
+                                        let has_uses = step_map.contains_key("uses");
+                                        
+                                        // 检查既没有run也没有uses的步骤
+                                        if !has_run && !has_uses {
+                                            result.errors.push(format!("Invalid step configuration at step {}: missing 'run' or 'uses'", step_index));
+                                        }
+                                        
+                                        // 检查同时使用run和uses的步骤
+                                        if has_run && has_uses {
+                                            result.errors.push(format!("Invalid step configuration at step {}: cannot use both 'run' and 'uses'", step_index));
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+
+        // 检查触发条件
+        if let Some(on_field) = yaml_value.get("on") {
+            if let Some(on_map) = on_field.as_mapping() {
+                if on_map.is_empty() {
+                    result.errors.push("Empty triggers".to_string());
+                }
+
+                // 检查cron表达式
+                if let Some(schedule) = on_map.get("schedule") {
+                    if let Some(schedule_array) = schedule.as_sequence() {
+                        for cron_item in schedule_array {
+                            if let Some(cron_map) = cron_item.as_mapping() {
+                                if let Some(cron_expr) = cron_map.get("cron") {
+                                    if let Some(expr_str) = cron_expr.as_str() {
+                                        // 简单的cron表达式验证
+                                        if !expr_str.contains('*') || expr_str.len() < 5 {
+                                            result.errors.push("Invalid cron expression".to_string());
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+
+                // 检查事件类型
+                for event_key in on_map.keys() {
+                    if let Some(event_str) = event_key.as_str() {
+                        if !["push", "pull_request", "workflow_dispatch", "schedule", "release", "issues", "discussion"].contains(&event_str) {
+                            result.errors.push(format!("Invalid event type: {}", event_str));
+                        }
+                    }
+                }
+            }
+        }
+        
+        yaml_value
     }
 
     /// 验证安全性
@@ -120,6 +208,80 @@ impl WorkflowValidator {
         if !self.content.contains("permissions:") {
             result.warnings.push("No permissions specified, consider setting minimal permissions".to_string());
         }
+    }
+
+    /// 验证作业依赖关系
+    fn validate_job_dependencies(&self, yaml_value: &serde_yaml::Value, result: &mut WorkflowValidationResult) {
+        if let Some(jobs) = yaml_value.get("jobs") {
+            if let Some(jobs_map) = jobs.as_mapping() {
+                let job_names: Vec<String> = jobs_map.keys()
+                    .filter_map(|k| k.as_str().map(|s| s.to_string()))
+                    .collect();
+
+                for (job_name, job_config) in jobs_map {
+                    if let Some(job_map) = job_config.as_mapping() {
+                        if let Some(job_name_str) = job_name.as_str() {
+                            // 检查自依赖
+                            if let Some(needs) = job_map.get("needs") {
+                                if let Some(needs_array) = needs.as_sequence() {
+                                    for need in needs_array {
+                                        if let Some(need_str) = need.as_str() {
+                                            if need_str == job_name_str {
+                                                result.errors.push(format!("Job '{}' cannot depend on itself", job_name_str));
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+
+                            // 检查不存在的依赖
+                            if let Some(needs) = job_map.get("needs") {
+                                if let Some(needs_array) = needs.as_sequence() {
+                                    for need in needs_array {
+                                        if let Some(need_str) = need.as_str() {
+                                            if !job_names.contains(&need_str.to_string()) {
+                                                result.errors.push(format!("Job '{}' depends on non-existent job '{}'", job_name_str, need_str));
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+
+                // 检查循环依赖（简单检查）
+                for job_name in &job_names {
+                    self.check_circular_dependencies(jobs_map, job_name, &mut Vec::new(), result);
+                }
+            }
+        }
+    }
+
+    /// 检查循环依赖
+    fn check_circular_dependencies(&self, jobs_map: &serde_yaml::Mapping, job_name: &str, path: &mut Vec<String>, result: &mut WorkflowValidationResult) {
+        if path.contains(&job_name.to_string()) {
+            result.errors.push(format!("Circular dependency detected: {} -> {}", path.join(" -> "), job_name));
+            return;
+        }
+
+        path.push(job_name.to_string());
+
+        if let Some(job_config) = jobs_map.get(&serde_yaml::Value::String(job_name.to_string())) {
+            if let Some(job_map) = job_config.as_mapping() {
+                if let Some(needs) = job_map.get("needs") {
+                    if let Some(needs_array) = needs.as_sequence() {
+                        for need in needs_array {
+                            if let Some(need_str) = need.as_str() {
+                                self.check_circular_dependencies(jobs_map, need_str, path, result);
+                            }
+                        }
+                    }
+                }
+            }
+        }
+
+        path.pop();
     }
 }
 

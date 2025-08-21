@@ -5,7 +5,6 @@
 //! - 漏洞扫描集成
 //! - 合规检查集成
 
-use std::path::Path;
 use crate::unit::security_scanning::{SecretScanner, DependencyValidator};
 use crate::unit::health_checks::CIHealthChecker;
 
@@ -26,7 +25,7 @@ impl SecurityIntegrationTester {
         }
     }
 
-    pub fn test_security_pipeline_integration(&self, workspace_root: &Path) -> SecurityPipelineResult {
+    pub fn test_security_pipeline_integration(&self, _workspace_root: &Path) -> SecurityPipelineResult {
         // 简化实现
         SecurityPipelineResult {
             pipeline_integration_successful: true,
@@ -37,7 +36,7 @@ impl SecurityIntegrationTester {
         }
     }
 
-    pub fn test_vulnerability_scanning_integration(&self, workspace_root: &Path) -> VulnerabilityScanningResult {
+    pub fn test_vulnerability_scanning_integration(&self, _workspace_root: &Path) -> VulnerabilityScanningResult {
         // 简化实现
         VulnerabilityScanningResult {
             scanning_integration_successful: true,
@@ -48,7 +47,7 @@ impl SecurityIntegrationTester {
         }
     }
 
-    pub fn test_compliance_checking_integration(&self, workspace_root: &Path) -> ComplianceCheckingResult {
+    pub fn test_compliance_checking_integration(&self, _workspace_root: &Path) -> ComplianceCheckingResult {
         // 简化实现
         ComplianceCheckingResult {
             compliance_integration_successful: true,
@@ -59,7 +58,7 @@ impl SecurityIntegrationTester {
         }
     }
 
-    pub fn test_security_ci_integration(&self, workspace_root: &Path) -> SecurityCIIntegrationResult {
+    pub fn test_security_ci_integration(&self, _workspace_root: &Path) -> SecurityCIIntegrationResult {
         // 简化实现
         SecurityCIIntegrationResult {
             ci_integration_successful: true,

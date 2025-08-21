@@ -1,5 +1,5 @@
 use serde::{Deserialize, Serialize};
-use config::{Config, ConfigError, Environment as ConfigEnv, File};
+use config::{Config, ConfigError, File, Environment as ConfigEnv};
 use std::path::PathBuf;
 use crate::errors::AppError;
 use std::env;
@@ -239,7 +239,7 @@ impl Default for CacheConfig {
 }
 
 /// 缓存类型
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
 #[serde(rename_all = "lowercase")]
 pub enum CacheType {
     Memory,
@@ -293,25 +293,6 @@ pub struct AppConfig {
 impl AppConfig {
     /// 从环境变量加载配置
     pub fn from_env() -> Result<Self, ConfigError> {
-        let mut config = Config::builder()
-            .add_source(File::with_name("config/default").required(false))
-            .add_source(File::with_name("config/local").required(false))
-            .add_source(File::with_name("config/production").required(false))
-            .add_source(Environment::with_prefix("APP").separator("_"))
-            .build()?;
-
-        // 设置默认值
-        config.set_default("database", DatabaseConfig::default())?;
-        config.set_default("server", ServerConfig::default())?;
-        config.set_default("logging", LoggingConfig::default())?;
-        config.set_default("security", SecurityConfig::default())?;
-        config.set_default("task", TaskConfig::default())?;
-        config.set_default("monitoring", MonitoringConfig::default())?;
-        config.set_default("cache", CacheConfig::default())?;
-        config.set_default("external_services", ExternalServiceConfig::default())?;
-        config.set_default("debug", false)?;
-        config.set_default("version", env!("CARGO_PKG_VERSION"))?;
-
         // 确定环境
         let environment = match std::env::var("APP_ENV").unwrap_or_else(|_| "development".to_string()).as_str() {
             "production" => Environment::Production,
@@ -321,7 +302,15 @@ impl AppConfig {
             _ => Environment::Development,
         };
 
-        config.set_default("environment", environment)?;
+        let config = Config::builder()
+            .add_source(File::with_name("config/default").required(false))
+            .add_source(File::with_name("config/local").required(false))
+            .add_source(File::with_name("config/production").required(false))
+            .add_source(ConfigEnv::with_prefix("APP").separator("_"))
+            .set_default("environment", environment.to_string())?
+            .set_default("debug", matches!(environment, Environment::Development))?
+            .set_default("version", env!("CARGO_PKG_VERSION"))?
+            .build()?;
 
         config.try_deserialize()
     }

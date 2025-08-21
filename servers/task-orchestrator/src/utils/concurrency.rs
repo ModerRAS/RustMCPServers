@@ -3,7 +3,7 @@ use std::collections::HashMap;
 use std::time::{Duration, Instant};
 use tokio::sync::{Mutex, Semaphore};
 use tokio::time::timeout;
-use uuid::Uuid;
+use chrono::Utc;
 
 use crate::domain::{TaskId, WorkerId};
 use crate::infrastructure::{LockManager, SqliteLockManager};
@@ -13,16 +13,37 @@ use crate::errors::{AppError, AppResult};
 pub struct ConcurrencyController {
     task_locks: Arc<Mutex<HashMap<String, TaskLock>>>,
     semaphore: Arc<Semaphore>,
-    lock_manager: Arc<SqliteLockManager>,
+    lock_manager: Arc<dyn LockManager>,
     max_concurrent_tasks: usize,
     lock_timeout: Duration,
     cleanup_interval: Duration,
+    last_cleanup: Arc<Mutex<chrono::DateTime<chrono::Utc>>>,
 }
 
 impl ConcurrencyController {
     /// 创建新的并发控制器
     pub fn new(
         lock_manager: Arc<SqliteLockManager>,
+        max_concurrent_tasks: usize,
+        lock_timeout: Duration,
+        cleanup_interval: Duration,
+    ) -> Self {
+        
+        Self {
+            task_locks: Arc::new(Mutex::new(HashMap::new())),
+            semaphore: Arc::new(Semaphore::new(max_concurrent_tasks)),
+            lock_manager,
+            max_concurrent_tasks,
+            lock_timeout,
+            cleanup_interval,
+            last_cleanup: Arc::new(Mutex::new(Utc::now())),
+        }
+    }
+
+    /// 创建用于测试的并发控制器
+    #[cfg(test)]
+    pub fn new_for_test(
+        lock_manager: Arc<dyn LockManager>,
         max_concurrent_tasks: usize,
         lock_timeout: Duration,
         cleanup_interval: Duration,
@@ -34,6 +55,7 @@ impl ConcurrencyController {
             max_concurrent_tasks,
             lock_timeout,
             cleanup_interval,
+            last_cleanup: Arc::new(Mutex::new(Utc::now())),
         }
     }
 
@@ -199,6 +221,7 @@ impl Clone for ConcurrencyController {
             max_concurrent_tasks: self.max_concurrent_tasks,
             lock_timeout: self.lock_timeout,
             cleanup_interval: self.cleanup_interval,
+            last_cleanup: self.last_cleanup.clone(),
         }
     }
 }
@@ -442,7 +465,7 @@ impl CircuitBreaker {
         match operation.await {
             Ok(result) => {
                 let mut state = self.state.lock().await;
-                if let CircuitBreakerState::Closed { failures, .. } = *state {
+                if let CircuitBreakerState::Closed { failures: _, .. } = *state {
                     *state = CircuitBreakerState::Closed {
                         failures: 0,
                         last_failure_time: None,
@@ -453,7 +476,7 @@ impl CircuitBreaker {
             Err(error) => {
                 let mut state = self.state.lock().await;
                 match *state {
-                    CircuitBreakerState::Closed { failures, last_failure_time } => {
+                    CircuitBreakerState::Closed { failures, last_failure_time: _ } => {
                         let new_failures = failures + 1;
                         if new_failures >= self.failure_threshold {
                             *state = CircuitBreakerState::Open {
@@ -566,7 +589,7 @@ mod tests {
     #[tokio::test]
     async fn test_concurrency_controller() {
         let lock_manager = Arc::new(MockLockManager);
-        let controller = ConcurrencyController::new(
+        let controller = ConcurrencyController::new_for_test(
             lock_manager,
             10,
             Duration::from_secs(30),

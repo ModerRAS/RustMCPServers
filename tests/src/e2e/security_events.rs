@@ -6,8 +6,6 @@
 //! - 未授权访问尝试测试
 //! - 数据泄露预防测试
 
-use std::path::Path;
-use tempfile::TempDir;
 
 /// 安全事件测试器
 #[derive(Debug)]
@@ -20,7 +18,7 @@ impl SecurityEventTester {
         Self {}
     }
 
-    pub fn test_security_breach_simulation(&self, workspace_root: &Path) -> SecurityBreachResult {
+    pub fn test_security_breach_simulation(&self, _workspace_root: &Path) -> SecurityBreachResult {
         // 简化实现
         SecurityBreachResult {
             breach_detected: true,
@@ -33,7 +31,7 @@ impl SecurityEventTester {
         }
     }
 
-    pub fn test_malicious_code_detection(&self, workspace_root: &Path) -> MaliciousCodeResult {
+    pub fn test_malicious_code_detection(&self, _workspace_root: &Path) -> MaliciousCodeResult {
         // 简化实现
         MaliciousCodeResult {
             malicious_code_detected: true,
@@ -45,7 +43,7 @@ impl SecurityEventTester {
         }
     }
 
-    pub fn test_unauthorized_access_attempt(&self, workspace_root: &Path) -> UnauthorizedAccessResult {
+    pub fn test_unauthorized_access_attempt(&self, _workspace_root: &Path) -> UnauthorizedAccessResult {
         // 简化实现
         UnauthorizedAccessResult {
             unauthorized_access_detected: true,
@@ -57,7 +55,7 @@ impl SecurityEventTester {
         }
     }
 
-    pub fn test_data_leak_prevention(&self, workspace_root: &Path) -> DataLeakPreventionResult {
+    pub fn test_data_leak_prevention(&self, _workspace_root: &Path) -> DataLeakPreventionResult {
         // 简化实现
         DataLeakPreventionResult {
             data_leak_prevented: true,

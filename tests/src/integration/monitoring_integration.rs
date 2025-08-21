@@ -5,7 +5,6 @@
 //! - 告警集成
 //! - 指标收集集成
 
-use std::path::Path;
 use crate::unit::build_monitoring::BuildMonitor;
 use crate::unit::health_checks::CIHealthChecker;
 
@@ -24,7 +23,7 @@ impl MonitoringIntegrationTester {
         }
     }
 
-    pub fn test_monitoring_pipeline_integration(&self, workspace_root: &Path) -> MonitoringPipelineResult {
+    pub fn test_monitoring_pipeline_integration(&self, _workspace_root: &Path) -> MonitoringPipelineResult {
         // 简化实现
         MonitoringPipelineResult {
             pipeline_integration_successful: true,
@@ -35,7 +34,7 @@ impl MonitoringIntegrationTester {
         }
     }
 
-    pub fn test_alerting_integration(&self, workspace_root: &Path) -> AlertingIntegrationResult {
+    pub fn test_alerting_integration(&self, _workspace_root: &Path) -> AlertingIntegrationResult {
         // 简化实现
         AlertingIntegrationResult {
             alerting_integration_successful: true,
@@ -46,7 +45,7 @@ impl MonitoringIntegrationTester {
         }
     }
 
-    pub fn test_metrics_collection_integration(&self, workspace_root: &Path) -> MetricsCollectionResult {
+    pub fn test_metrics_collection_integration(&self, _workspace_root: &Path) -> MetricsCollectionResult {
         // 简化实现
         MetricsCollectionResult {
             metrics_integration_successful: true,
@@ -57,7 +56,7 @@ impl MonitoringIntegrationTester {
         }
     }
 
-    pub fn test_dashboard_integration(&self, workspace_root: &Path) -> DashboardIntegrationResult {
+    pub fn test_dashboard_integration(&self, _workspace_root: &Path) -> DashboardIntegrationResult {
         // 简化实现
         DashboardIntegrationResult {
             dashboard_integration_successful: true,
@@ -68,7 +67,7 @@ impl MonitoringIntegrationTester {
         }
     }
 
-    pub fn test_log_integration(&self, workspace_root: &Path) -> LogIntegrationResult {
+    pub fn test_log_integration(&self, _workspace_root: &Path) -> LogIntegrationResult {
         // 简化实现
         LogIntegrationResult {
             log_integration_successful: true,

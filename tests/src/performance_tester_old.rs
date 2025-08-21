@@ -1,5 +1,4 @@
 use std::time::{Duration, Instant};
-use std::collections::HashMap;
 use serde::{Deserialize, Serialize};
 use tokio::time::sleep;
 
@@ -41,7 +40,7 @@ impl PerformanceTester {
     }
 
     /// 测试工作流执行性能
-    pub async fn test_workflow_performance(&self, workflow_path: &str) -> Result<PerformanceTestResult, Box<dyn std::error::Error>> {
+    pub async fn test_workflow_performance(&self, _workflow_path: &str) -> Result<PerformanceTestResult, Box<dyn std::error::Error>> {
         let mut durations = Vec::new();
         let mut successes = 0;
         
@@ -104,7 +103,7 @@ impl PerformanceTester {
     }
 
     /// 测试缓存性能
-    pub async fn test_cache_performance(&self, workflow_path: &str, cache_enabled: bool) -> Result<CachePerformanceResult, Box<dyn std::error::Error>> {
+    pub async fn test_cache_performance(&self, _workflow_path: &str, cache_enabled: bool) -> Result<CachePerformanceResult, Box<dyn std::error::Error>> {
         let mut cache_hits = 0;
         let mut cache_misses = 0;
         let mut total_time_with_cache = 0;
@@ -154,7 +153,7 @@ impl PerformanceTester {
     }
 
     /// 测试并发性能
-    pub async fn test_concurrent_performance(&self, workflow_path: &str, max_concurrent: usize) -> Result<Vec<PerformanceTestResult>, Box<dyn std::error::Error>> {
+    pub async fn test_concurrent_performance(&self, _workflow_path: &str, max_concurrent: usize) -> Result<Vec<PerformanceTestResult>, Box<dyn std::error::Error>> {
         let mut results = Vec::new();
 
         for concurrent in 1..=max_concurrent {
@@ -167,13 +166,13 @@ impl PerformanceTester {
     }
 
     /// 模拟工作流执行
-    async fn simulate_workflow_execution(&self, workflow_path: &str) -> Result<u64, Box<dyn std::error::Error>> {
+    async fn simulate_workflow_execution(&self, _workflow_path: &str) -> Result<u64, Box<dyn std::error::Error>> {
         simulate_workflow_execution_fixed(workflow_path).await
     }
 }
 
 /// 固定的工作流执行模拟函数
-async fn simulate_workflow_execution_fixed(workflow_path: &str) -> Result<u64, Box<dyn std::error::Error>> {
+async fn simulate_workflow_execution_fixed(_workflow_path: &str) -> Result<u64, Box<dyn std::error::Error>> {
         let start_time = Instant::now();
 
         // 模拟不同的工作流步骤

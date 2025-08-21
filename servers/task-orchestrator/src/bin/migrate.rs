@@ -1,4 +1,4 @@
-use sqlx::{migrate::MigrateDatabase, Sqlite, Pool};
+use sqlx::{migrate::MigrateDatabase, Sqlite};
 use std::env;
 use tokio;
 

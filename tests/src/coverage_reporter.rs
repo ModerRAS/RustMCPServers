@@ -6,9 +6,7 @@
 //! - 覆盖率趋势分析
 //! - 覆盖率改进建议
 
-use std::collections::HashMap;
 use std::fs;
-use std::path::Path;
 use serde::{Deserialize, Serialize};
 use chrono::{DateTime, Utc};
 
@@ -101,7 +99,7 @@ impl CoverageReportGenerator {
     }
 
     /// 解析覆盖率数据
-    pub fn parse_coverage_data(&mut self, coverage_file: &str) -> Result<(), Box<dyn std::error::Error>> {
+    pub fn parse_coverage_data(&mut self, _coverage_file: &str) -> Result<(), Box<dyn std::error::Error>> {
         // 在实际实现中，这里会解析真实的覆盖率数据文件
         // 例如：tarpaulin、grcov、lcov等工具生成的文件
         

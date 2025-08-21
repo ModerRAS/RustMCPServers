@@ -124,7 +124,7 @@ fn simulate_cache_restore(cache_path: &str) -> bool {
     available_paths.contains(&cache_path)
 }
 
-fn simulate_secret_scan(content: &str) -> bool {
+fn simulate_secret_scan(_content: &str) -> bool {
     // 模拟密钥扫描 - 检测简单模式
     let secret_patterns = vec![
         "password",

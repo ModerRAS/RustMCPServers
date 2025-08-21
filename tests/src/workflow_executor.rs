@@ -1,5 +1,3 @@
-use std::process::Command;
-use std::collections::HashMap;
 use serde::{Deserialize, Serialize};
 use chrono::{DateTime, Utc};
 
@@ -54,7 +52,7 @@ impl WorkflowExecutor {
     }
 
     /// 执行工作流测试
-    pub async fn execute_workflow_test(&self, workflow_file: &str, branch: &str) -> Result<WorkflowExecutionResult, Box<dyn std::error::Error>> {
+    pub async fn execute_workflow_test(&self, workflow_file: &str, _branch: &str) -> Result<WorkflowExecutionResult, Box<dyn std::error::Error>> {
         let start_time = Utc::now();
         
         // 1. 触发工作流
@@ -77,7 +75,7 @@ impl WorkflowExecutor {
     }
 
     /// 触发工作流
-    async fn trigger_workflow(&self, workflow_file: &str, branch: &str) -> Result<String, Box<dyn std::error::Error>> {
+    async fn trigger_workflow(&self, workflow_file: &str, _branch: &str) -> Result<String, Box<dyn std::error::Error>> {
         // 在实际环境中，这里会调用GitHub API
         // 为了测试，我们模拟一个工作流ID
         let workflow_id = format!("wf_{}_{}", 
@@ -166,7 +164,7 @@ impl WorkflowExecutor {
     }
 
     /// 提取分支配置
-    fn extract_branches(&self, content: &str, trigger_type: &str) -> Vec<String> {
+    fn extract_branches(&self, _content: &str, trigger_type: &str) -> Vec<String> {
         let re = regex::Regex::new(&format!(r"{}:\s*\n\s*branches:\s*\[(.*?)\]", trigger_type)).unwrap();
         
         if let Some(caps) = re.captures(content) {
@@ -195,7 +193,7 @@ impl WorkflowExecutor {
     }
 
     /// 计算矩阵组合数量
-    fn count_matrix_combinations(&self, content: &str) -> usize {
+    fn count_matrix_combinations(&self, _content: &str) -> usize {
         let mut count = 1;
         
         // 简单的矩阵组合计算
@@ -210,7 +208,7 @@ impl WorkflowExecutor {
     }
 
     /// 提取矩阵组合
-    fn extract_matrix_combinations(&self, content: &str) -> Result<Vec<HashMap<String, String>>, Box<dyn std::error::Error>> {
+    fn extract_matrix_combinations(&self, _content: &str) -> Result<Vec<HashMap<String, String>>, Box<dyn std::error::Error>> {
         // 这里应该解析YAML获取矩阵组合，为了示例返回空
         Ok(vec![])
     }

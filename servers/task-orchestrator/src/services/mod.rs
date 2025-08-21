@@ -1,13 +1,13 @@
 use std::sync::Arc;
 use chrono::{DateTime, Utc};
-use uuid::Uuid;
+use validator::Validate;
 
 use crate::domain::{
-    Task, TaskId, TaskStatus, TaskPriority, TaskHistory, TaskResult,
+    Task, TaskId, TaskStatus, TaskHistory, TaskResult,
     WorkDirectory, Prompt, TaskTag, WorkerId, CreateTaskRequest, 
-    CompleteTaskRequest, AcquireTaskRequest, TaskError,
+    CompleteTaskRequest, AcquireTaskRequest,
 };
-use crate::infrastructure::{TaskRepository, SqliteTaskRepository, SqliteLockManager, LockManager};
+use crate::infrastructure::{TaskRepository, LockManager};
 use crate::errors::{AppError, AppResult};
 use crate::models::{TaskFilter, TaskStatistics};
 
@@ -17,6 +17,9 @@ pub struct TaskService {
     lock_manager: Arc<dyn LockManager>,
     max_retries: u32,
     task_timeout: u64,
+    cleanup_interval: u64,
+    timeout_check_interval: u64,
+    metrics_interval: u64,
 }
 
 impl TaskService {
@@ -32,6 +35,9 @@ impl TaskService {
             lock_manager,
             max_retries,
             task_timeout,
+            cleanup_interval: 300, // 5分钟
+            timeout_check_interval: 60, // 1分钟
+            metrics_interval: 30, // 30秒
         }
     }
 
@@ -85,7 +91,7 @@ impl TaskService {
             .get_next_task(&request.work_path, &request.worker_id)
             .await?;
 
-        if let Some(task) = task {
+        if let Some(ref task) = task {
             // 创建任务历史记录
             let history = TaskHistory::new(
                 task.id,
@@ -482,17 +488,20 @@ impl TaskMonitor {
 mod tests {
     use super::*;
     use crate::infrastructure::{TaskRepository, SqliteLockManager};
+    use crate::domain::TaskPriority;
     use std::collections::HashMap;
+    use std::sync::{Arc, Mutex};
 
     // Mock repository for testing
+    #[derive(Clone)]
     struct MockTaskRepository {
-        tasks: HashMap<TaskId, Task>,
+        tasks: Arc<Mutex<HashMap<TaskId, Task>>>,
     }
 
     impl MockTaskRepository {
         fn new() -> Self {
             Self {
-                tasks: HashMap::new(),
+                tasks: Arc::new(Mutex::new(HashMap::new())),
             }
         }
     }
@@ -504,11 +513,13 @@ mod tests {
         }
 
         async fn get_task(&self, task_id: &TaskId) -> AppResult<Option<Task>> {
-            Ok(self.tasks.get(task_id).cloned())
+            let tasks = self.tasks.lock().unwrap();
+            Ok(tasks.get(task_id).cloned())
         }
 
         async fn update_task(&self, task: &Task) -> AppResult<()> {
-            self.tasks.insert(task.id, task.clone());
+            let mut tasks = self.tasks.lock().unwrap();
+            tasks.insert(task.id, task.clone());
             Ok(())
         }
 

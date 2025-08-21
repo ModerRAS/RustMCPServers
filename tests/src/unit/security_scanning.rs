@@ -6,9 +6,6 @@
 //! - 许可证合规性
 //! - CodeQL集成
 
-use std::path::Path;
-use tempfile::NamedTempFile;
-use crate::test_utils;
 
 /// 密钥检测测试
 #[cfg(test)]
@@ -510,7 +507,7 @@ impl SecretScanner {
         self.scan_content(&content)
     }
 
-    pub fn scan_content(&self, content: &str) -> Vec<SecretFinding> {
+    pub fn scan_content(&self, _content: &str) -> Vec<SecretFinding> {
         let mut findings = Vec::new();
         
         for pattern in &self.patterns {
@@ -527,7 +524,7 @@ impl SecretScanner {
         findings
     }
 
-    fn get_line_number(&self, content: &str, pos: usize) -> usize {
+    fn get_line_number(&self, _content: &str, pos: usize) -> usize {
         content[..pos].lines().count()
     }
 }

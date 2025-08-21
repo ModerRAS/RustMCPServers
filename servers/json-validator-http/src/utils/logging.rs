@@ -2,9 +2,8 @@
 
 use chrono::Utc;
 use tracing_subscriber::{
-    filter::EnvFilter,
     fmt::{self},
-    layer::{Layer, SubscriberExt},
+    layer::Layer,
     util::SubscriberInitExt,
 };
 

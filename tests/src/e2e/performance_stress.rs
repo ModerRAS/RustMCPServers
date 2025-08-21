@@ -6,8 +6,6 @@
 //! - 内存压力测试
 //! - 磁盘IO压力测试
 
-use std::path::Path;
-use tempfile::TempDir;
 
 /// 性能压力测试器
 #[derive(Debug)]
@@ -20,7 +18,7 @@ impl PerformanceStressTester {
         Self {}
     }
 
-    pub fn test_high_load_scenario(&self, workspace_root: &Path) -> HighLoadResult {
+    pub fn test_high_load_scenario(&self, _workspace_root: &Path) -> HighLoadResult {
         // 简化实现
         HighLoadResult {
             high_load_handled: true,
@@ -32,7 +30,7 @@ impl PerformanceStressTester {
         }
     }
 
-    pub fn test_concurrent_builds(&self, workspace_root: &Path) -> ConcurrentBuildsResult {
+    pub fn test_concurrent_builds(&self, _workspace_root: &Path) -> ConcurrentBuildsResult {
         // 简化实现
         ConcurrentBuildsResult {
             concurrent_builds_successful: true,
@@ -44,7 +42,7 @@ impl PerformanceStressTester {
         }
     }
 
-    pub fn test_memory_pressure(&self, workspace_root: &Path) -> MemoryPressureResult {
+    pub fn test_memory_pressure(&self, _workspace_root: &Path) -> MemoryPressureResult {
         // 简化实现
         MemoryPressureResult {
             memory_pressure_handled: true,
@@ -56,7 +54,7 @@ impl PerformanceStressTester {
         }
     }
 
-    pub fn test_disk_io_pressure(&self, workspace_root: &Path) -> DiskIOPressureResult {
+    pub fn test_disk_io_pressure(&self, _workspace_root: &Path) -> DiskIOPressureResult {
         // 简化实现
         DiskIOPressureResult {
             disk_io_pressure_handled: true,

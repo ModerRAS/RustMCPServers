@@ -46,8 +46,8 @@ rate_limit_enabled = false
 rate_limit_requests_per_minute = 1000
 rate_limit_burst_size = 100
 enable_https = false
-tls_cert_path = null
-tls_key_path = null
+tls_cert_path = "null"
+tls_key_path = "null"
 
 [task]
 max_concurrent_tasks = 10
@@ -68,7 +68,7 @@ health_check_endpoint = "/health"
 enable_prometheus = true
 prometheus_endpoint = "/prometheus"
 enable_tracing = false
-tracing_endpoint = null
+tracing_endpoint = "null"
 metrics_collection_interval = 60
 
 [cache]
@@ -76,8 +76,13 @@ enable_cache = true
 cache_type = "memory"
 cache_ttl = 300
 cache_size = 1000
-redis_url = null
+redis_url = "null"
 memory_cache_size = 104857600
 
 [external_services]
 enable_external_services = false
+services = {}
+
+environment = "development"
+debug = true
+version = "0.1.0"

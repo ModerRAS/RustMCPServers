@@ -1,6 +1,4 @@
-use std::collections::HashMap;
 use std::fs;
-use std::path::Path;
 use regex::Regex;
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
@@ -50,7 +48,7 @@ pub struct SecurityTester {
 
 impl SecurityTester {
     /// 创建新的安全测试器
-    pub fn new(workflow_path: &str) -> Result<Self, Box<dyn std::error::Error>> {
+    pub fn new(_workflow_path: &str) -> Result<Self, Box<dyn std::error::Error>> {
         let path = Path::new(workflow_path);
         let content = fs::read_to_string(path)?;
         

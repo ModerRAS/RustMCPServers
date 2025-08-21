@@ -1,5 +1,4 @@
 use std::io::Write;
-use tempfile::NamedTempFile;
 use github_actions_tests::security_tester::SecurityTester;
 
 fn main() {

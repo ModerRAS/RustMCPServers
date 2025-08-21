@@ -219,6 +219,11 @@ impl WorkerId {
     pub fn to_string(&self) -> String {
         self.0.clone()
     }
+
+    /// 从字符串创建WorkerId，如果失败则返回默认值
+    pub fn from_str_or_default(s: String) -> Self {
+        Self::new(s).unwrap_or_else(|_| Self("default_worker".to_string()))
+    }
 }
 
 impl fmt::Display for WorkerId {
@@ -248,8 +253,14 @@ pub enum TaskStatus {
 
 impl TaskStatus {
     pub fn from_str(s: &str) -> Result<Self, TaskStatusError> {
-        use strum::EnumString;
-        Self::from_str(s).map_err(|_| TaskStatusError::InvalidStatus(s.to_string()))
+        match s.to_lowercase().as_str() {
+            "waiting" => Ok(TaskStatus::Waiting),
+            "working" => Ok(TaskStatus::Working),
+            "completed" => Ok(TaskStatus::Completed),
+            "failed" => Ok(TaskStatus::Failed),
+            "cancelled" => Ok(TaskStatus::Cancelled),
+            _ => Err(TaskStatusError::invalid_status(s.to_string())),
+        }
     }
 
     pub fn is_terminal(&self) -> bool {
@@ -265,6 +276,12 @@ impl TaskStatus {
 #[error("Invalid task status: {0}")]
 pub struct TaskStatusError(String);
 
+impl TaskStatusError {
+    pub fn invalid_status(s: String) -> Self {
+        Self(s)
+    }
+}
+
 /// 任务优先级枚举
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize, strum::EnumString, strum::Display)]
 #[strum(serialize_all = "lowercase")]
@@ -276,8 +293,12 @@ pub enum TaskPriority {
 
 impl TaskPriority {
     pub fn from_str(s: &str) -> Result<Self, TaskPriorityError> {
-        use strum::EnumString;
-        Self::from_str(s).map_err(|_| TaskPriorityError::InvalidPriority(s.to_string()))
+        match s.to_lowercase().as_str() {
+            "low" => Ok(TaskPriority::Low),
+            "medium" => Ok(TaskPriority::Medium),
+            "high" => Ok(TaskPriority::High),
+            _ => Err(TaskPriorityError::invalid_priority(s.to_string())),
+        }
     }
 
     pub fn weight(&self) -> u32 {
@@ -298,6 +319,12 @@ impl Default for TaskPriority {
 #[derive(Debug, Error)]
 #[error("Invalid task priority: {0}")]
 pub struct TaskPriorityError(String);
+
+impl TaskPriorityError {
+    pub fn invalid_priority(s: String) -> Self {
+        Self(s)
+    }
+}
 
 /// 任务结果
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -603,11 +630,11 @@ pub struct CreateTaskRequest {
     pub tags: Option<Vec<String>>,
 }
 
-fn validate_priority(priority: &TaskPriority) -> Result<(), validator::ValidationError> {
+fn validate_priority(_priority: &TaskPriority) -> Result<(), validator::ValidationError> {
     Ok(())
 }
 
-fn validate_tags(tags: &Vec<String>) -> Result<(), validator::ValidationError> {
+pub fn validate_tags(tags: &Vec<String>) -> Result<(), validator::ValidationError> {
     for tag in tags {
         if tag.len() > 100 {
             return Err(validator::ValidationError::new("tag_too_long"));

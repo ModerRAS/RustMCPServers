@@ -9,9 +9,7 @@
 //! - 覆盖率报告
 //! - 建议和改进措施
 
-use std::collections::HashMap;
 use std::fs;
-use std::path::Path;
 use serde::{Deserialize, Serialize};
 use chrono::{DateTime, Utc};
 use crate::{TestSuiteResult, TestStatus};

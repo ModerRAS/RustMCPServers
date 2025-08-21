@@ -1,6 +1,5 @@
 use serde::{Deserialize, Serialize};
 use sqlx::FromRow;
-use uuid::Uuid;
 use chrono::{DateTime, Utc};
 use std::collections::HashMap;
 
@@ -56,7 +55,7 @@ impl TaskRecord {
             priority: TaskPriority::from_str(&self.priority)?,
             tags,
             status: TaskStatus::from_str(&self.status)?,
-            worker_id: self.worker_id.map(WorkerId::new),
+            worker_id: self.worker_id.map(WorkerId::from_str_or_default),
             created_at: self.created_at,
             started_at: self.started_at,
             completed_at: self.completed_at,
@@ -131,7 +130,7 @@ impl TaskHistoryRecord {
             id: self.id as u64,
             task_id: TaskId::from_str(&self.task_id)?,
             status: TaskStatus::from_str(&self.status)?,
-            worker_id: self.worker_id.map(WorkerId::new),
+            worker_id: self.worker_id.map(WorkerId::from_str_or_default),
             changed_at: self.changed_at,
             details,
         })

@@ -1,19 +1,17 @@
 use axum::{
     extract::{Path, Query, State},
-    http::StatusCode,
     response::{IntoResponse, Json},
-    routing::{get, post, put, delete},
+    routing::{get, post},
     Router,
 };
 use serde::{Deserialize, Serialize};
 use std::sync::Arc;
-use uuid::Uuid;
 use validator::Validate;
 
-use crate::domain::{Task, TaskId, TaskStatus, TaskPriority, Pagination};
+use crate::domain::{TaskId, TaskStatus, TaskPriority};
 use crate::services::TaskService;
 use crate::domain::{CreateTaskRequest, CompleteTaskRequest, AcquireTaskRequest};
-use crate::models::{TaskFilter, TaskStatistics};
+use crate::models::TaskFilter;
 use crate::errors::{AppError, AppResult, ApiResponse};
 use crate::utils::logging::StructuredLogger;
 
@@ -33,10 +31,10 @@ pub struct ApiCreateTaskRequest {
     #[validate(length(min = 1, max = 10000))]
     pub prompt: String,
     
-    #[validate(custom(function = "validate_priority"))]
+    #[validate(custom(function = "validate_priority_string"))]
     pub priority: Option<String>,
     
-    #[validate(custom(function = "validate_tags"))]
+    #[validate(custom(function = "crate::domain::validate_tags"))]
     pub tags: Option<Vec<String>>,
 }
 
@@ -59,7 +57,7 @@ pub struct ApiGetTaskRequest {
 }
 
 /// 任务获取响应
-#[derive(Debug, Serialize, Deserialize)]
+#[derive(Debug, Serialize, Deserialize, Default)]
 pub struct ApiGetTaskResponse {
     pub task_id: String,
     pub prompt: String,
@@ -185,26 +183,6 @@ pub struct StatisticsResponse {
     pub time_series: Vec<serde_json::Value>,
 }
 
-/// 验证优先级
-fn validate_priority(priority: &str) -> Result<(), validator::ValidationError> {
-    match priority {
-        "low" | "medium" | "high" => Ok(()),
-        _ => Err(validator::ValidationError::new("invalid_priority")),
-    }
-}
-
-/// 验证标签
-fn validate_tags(tags: &Vec<String>) -> Result<(), validator::ValidationError> {
-    for tag in tags {
-        if tag.len() > 100 {
-            return Err(validator::ValidationError::new("tag_too_long"));
-        }
-        if !tag.chars().all(|c| c.is_alphanumeric() || c == '_' || c == '-') {
-            return Err(validator::ValidationError::new("invalid_tag_format"));
-        }
-    }
-    Ok(())
-}
 
 /// 创建任务处理器
 pub async fn create_task_handler(
@@ -236,7 +214,7 @@ pub async fn create_task_handler(
         work_directory: request.work_directory,
         prompt: request.prompt,
         priority: Some(priority),
-        tags: Some(tags),
+        tags: Some(tags.into_iter().map(|t| t.to_string()).collect()),
     };
 
     // 创建任务
@@ -307,7 +285,7 @@ pub async fn get_next_task_handler(
 
             Ok(Json(ApiResponse::success(response)))
         }
-        None => Ok(Json(ApiResponse::success::<ApiGetTaskResponse>(None))),
+        None => Ok(Json(ApiResponse::success(ApiGetTaskResponse::default()))),
     }
 }
 
@@ -563,7 +541,7 @@ pub async fn retry_task_handler(
 
 /// 健康检查处理器
 pub async fn health_check_handler(
-    State(state): State<ApiState>,
+    State(_state): State<ApiState>,
 ) -> Result<impl IntoResponse, AppError> {
     use crate::utils::HealthChecker;
     
@@ -617,6 +595,18 @@ pub async fn get_statistics_handler(
     };
 
     Ok(Json(ApiResponse::success(response)))
+}
+
+/// 验证优先级字符串
+fn validate_priority_string(priority: &str) -> Result<(), validator::ValidationError> {
+    // 尝试解析为TaskPriority
+    if priority.is_empty() {
+        return Ok(());
+    }
+    
+    TaskPriority::from_str(priority)
+        .map(|_| ())
+        .map_err(|_| validator::ValidationError::new("invalid_priority"))
 }
 
 /// 创建API路由

@@ -6,8 +6,6 @@
 //! - 网络中断恢复测试
 //! - 资源耗尽处理测试
 
-use std::path::Path;
-use tempfile::TempDir;
 
 /// 故障恢复测试器
 #[derive(Debug)]
@@ -20,7 +18,7 @@ impl FailureRecoveryTester {
         Self {}
     }
 
-    pub fn test_build_failure_recovery(&self, workspace_root: &Path) -> BuildFailureRecoveryResult {
+    pub fn test_build_failure_recovery(&self, _workspace_root: &Path) -> BuildFailureRecoveryResult {
         // 简化实现
         BuildFailureRecoveryResult {
             recovery_successful: true,
@@ -32,7 +30,7 @@ impl FailureRecoveryTester {
         }
     }
 
-    pub fn test_cache_failure_handling(&self, workspace_root: &Path) -> CacheFailureResult {
+    pub fn test_cache_failure_handling(&self, _workspace_root: &Path) -> CacheFailureResult {
         // 简化实现
         CacheFailureResult {
             cache_failure_handled: true,
@@ -43,7 +41,7 @@ impl FailureRecoveryTester {
         }
     }
 
-    pub fn test_network_outage_recovery(&self, workspace_root: &Path) -> NetworkRecoveryResult {
+    pub fn test_network_outage_recovery(&self, _workspace_root: &Path) -> NetworkRecoveryResult {
         // 简化实现
         NetworkRecoveryResult {
             network_recovery_successful: true,
@@ -55,7 +53,7 @@ impl FailureRecoveryTester {
         }
     }
 
-    pub fn test_resource_exhaustion_handling(&self, workspace_root: &Path) -> ResourceExhaustionResult {
+    pub fn test_resource_exhaustion_handling(&self, _workspace_root: &Path) -> ResourceExhaustionResult {
         // 简化实现
         ResourceExhaustionResult {
             resource_exhaustion_handled: true,

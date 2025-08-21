@@ -5,7 +5,6 @@ use axum::{
     Router,
     response::Json,
 };
-use std::sync::Arc;
 use crate::handlers::{json_rpc_handler, health_check};
 use crate::models::AppState;
 
