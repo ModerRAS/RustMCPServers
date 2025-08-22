@@ -1,3 +1,154 @@
+//! # 存储层模块
+//! 
+//! 该模块提供了 Task Orchestrator MCP 服务器的数据存储和访问功能。
+//! 
+//! ## 主要功能
+//! 
+//! - **存储抽象**: 定义了统一的任务存储接口
+//! - **内存存储**: 提供高性能的内存任务存储实现
+//! - **状态管理**: 完整的任务状态转换和验证
+//! - **并发控制**: 使用异步读写锁确保线程安全
+//! - **错误处理**: 统一的错误类型和处理机制
+//! 
+//! ## 核心组件
+//! 
+//! - `TaskRepository`: 任务存储特征，定义了所有存储操作接口
+//! - `InMemoryTaskRepository`: 内存任务存储实现
+//! - `RepositoryError`: 存储层错误类型
+//! 
+//! ## 使用示例
+//! 
+//! ```rust
+//! use task_orchestrator_mcp::storage::{InMemoryTaskRepository, TaskRepository};
+//! use task_orchestrator_mcp::models::{CreateTaskRequest, TaskFilter, TaskStatus};
+//! 
+//! // 创建存储实例
+//! let repository = InMemoryTaskRepository::new();
+//! 
+//! // 创建任务
+//! let request = CreateTaskRequest {
+//!     work_directory: "/workspace/project".to_string(),
+//!     prompt: "实现用户认证功能".to_string(),
+//!     priority: Some(TaskPriority::High),
+//!     tags: Some(vec!["feature".to_string()]),
+//!     max_retries: Some(3),
+//!     timeout_seconds: Some(3600),
+//! };
+//! 
+//! let task = repository.create_task(request).await?;
+//! println!("Created task: {}", task.id);
+//! 
+//! // 获取任务
+//! let task = repository.get_task(task.id).await?;
+//! println!("Task status: {:?}", task.status);
+//! 
+//! // 列出任务
+//! let filter = TaskFilter {
+//!     status: Some(TaskStatus::Waiting),
+//!     priority: None,
+//!     worker_id: None,
+//!     limit: 10,
+//!     offset: 0,
+//! };
+//! 
+//! let tasks = repository.list_tasks(filter).await?;
+//! println!("Found {} waiting tasks", tasks.len());
+//! 
+//! // 获取统计信息
+//! let stats = repository.get_statistics().await?;
+//! println!("Total tasks: {}, Success rate: {:.2}%", 
+//!     stats.total_tasks, stats.success_rate);
+//! ```
+//! 
+//! ## 存储接口设计
+//! 
+//! `TaskRepository` 特征定义了完整的任务存储操作：
+//! 
+//! - `create_task`: 创建新任务
+//! - `get_task`: 获取指定任务
+//! - `update_task`: 更新任务信息
+//! - `delete_task`: 删除任务（预留功能）
+//! - `list_tasks`: 列出任务（支持过滤和分页）
+//! - `acquire_task`: 获取待处理任务
+//! - `complete_task`: 完成任务
+//! - `fail_task`: 标记任务失败
+//! - `retry_task`: 重试任务
+//! - `get_statistics`: 获取统计信息
+//! - `cleanup_old_tasks`: 清理旧任务（预留功能）
+//! 
+//! ## 状态转换验证
+//! 
+//! 存储层实现了严格的状态转换验证：
+//! 
+//! ```rust
+//! // 允许的状态转换
+//! Pending → Waiting, Cancelled
+//! Waiting → Running, Cancelled
+//! Running → Completed, Failed, Cancelled
+//! Failed → Waiting, Cancelled
+//! Cancelled → Waiting
+//! ```
+//! 
+//! ## 任务调度逻辑
+//! 
+//! `acquire_task` 方法实现了智能的任务调度：
+//! 
+//! - 优先选择高优先级任务
+//! - 匹配工作目录
+//! - 只选择等待状态的任务
+//! - 自动更新任务状态为运行中
+//! - 记录工作节点和开始时间
+//! 
+//! ## 重试机制
+//! 
+//! `fail_task` 方法实现了自动重试逻辑：
+//! 
+//! - 检查重试次数限制
+//! - 未达到限制时重置为等待状态
+//! - 达到限制时标记为失败
+//! - 保留错误信息
+//! 
+//! ## 统计信息
+//! 
+//! `get_statistics` 方法提供详细的统计信息：
+//! 
+//! - 各状态任务数量
+//! - 平均完成时间
+//! - 成功率计算
+//! - 任务总数统计
+//! 
+//! ## 内存存储特点
+//! 
+//! - **高性能**: 基于内存的HashMap存储
+//! - **线程安全**: 使用Tokio的RwLock实现异步并发控制
+//! - **自动清理**: 支持定期清理过期任务
+//! - **分页支持**: 支持limit和offset分页
+//! - **排序功能**: 按优先级和创建时间排序
+//! 
+//! ## 错误处理
+//! 
+//! 定义了统一的错误类型：
+//! 
+//! - `TaskNotFound`: 任务不存在
+//! - `InvalidStateTransition`: 非法状态转换
+//! - `TaskLocked`: 任务被锁定（预留功能）
+//! 
+//! ## 扩展性
+//! 
+//! 存储层设计考虑了未来扩展：
+//! 
+//! - 预留了分布式锁定功能
+//! - 预留了任务删除功能
+//! - 预留了旧任务清理功能
+//! - 支持轻松替换为数据库存储
+//! 
+//! ## 性能优化
+//! 
+//! - 使用读写锁提高并发性能
+//! - 惰性计算统计信息
+//! - 高效的过滤和排序算法
+//! - 最小化锁的持有时间
+
 use std::sync::Arc;
 use std::collections::HashMap;
 use tokio::sync::RwLock;

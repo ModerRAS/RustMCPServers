@@ -1,3 +1,79 @@
+//! # 服务层模块
+//! 
+//! 该模块提供了 Simple Task Orchestrator 的核心业务逻辑和服务实现。
+//! 
+//! ## 主要功能
+//! 
+//! - **任务管理**: 完整的任务生命周期管理服务
+//! - **任务调度**: 自动化的任务调度和监控
+//! - **并发控制**: 基于锁的任务并发执行控制
+//! - **错误处理**: 健壮的错误处理和重试机制
+//! - **后台任务**: 自动清理和超时处理
+//! 
+//! ## 核心服务
+//! 
+//! - `TaskService`: 核心任务服务，提供任务CRUD操作
+//! - `TaskScheduler`: 任务调度器，处理定时任务和清理
+//! - `TaskMonitor`: 任务监控器，收集和显示统计信息
+//! - `TaskExecutionService`: 任务执行服务，处理不同执行模式
+//! 
+//! ## 使用示例
+//! 
+//! ```rust
+//! use simple_task_orchestrator::services::{TaskService, TaskScheduler, TaskMonitor};
+//! use simple_task_orchestrator::infrastructure::{TaskRepository, LockManager};
+//! use std::sync::Arc;
+//! 
+//! // 创建任务服务
+//! let task_service = Arc::new(TaskService::new(
+//!     task_repository,
+//!     lock_manager,
+//!     3,  // max_retries
+//!     3600,  // task_timeout
+//! ));
+//! 
+//! // 创建调度器和监控器
+//! let scheduler = TaskScheduler::new(task_service.clone(), 3600, 60);
+//! let monitor = TaskMonitor::new(task_service.clone(), 60);
+//! 
+//! // 启动后台任务
+//! scheduler.start().await?;
+//! monitor.start().await?;
+//! 
+//! // 创建任务
+//! let task = task_service.create_task(create_request).await?;
+//! 
+//! // 获取任务
+//! let task = task_service.acquire_task(acquire_request).await?;
+//! ```
+//! 
+//! ## 任务生命周期
+//! 
+//! 1. **创建**: 通过 `create_task` 创建新任务
+//! 2. **获取**: 通过 `acquire_task` 获取待处理任务
+//! 3. **执行**: 工作节点执行任务
+//! 4. **完成**: 通过 `complete_task` 标记任务完成
+//! 5. **清理**: 后台自动清理过期任务
+//! 
+//! ## 并发控制
+//! 
+//! - 使用分布式锁确保任务不会被多个工作节点同时执行
+//! - 支持锁的超时和自动释放
+//! - 提供锁的获取和释放管理
+//! 
+//! ## 错误处理
+//! 
+//! - 任务失败时自动重试（最多3次）
+//! - 超时任务自动标记为失败
+//! - 详细的错误信息和上下文
+//! 
+//! ## 监控和统计
+//! 
+//! - 实时任务统计信息
+//! - 成功率计算
+//! - 任务执行时间监控
+//! - 后台定时统计输出
+
 use std::sync::Arc;
 use chrono::{DateTime, Utc};
 

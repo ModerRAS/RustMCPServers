@@ -1,3 +1,81 @@
+//! # 领域模型模块
+//! 
+//! 该模块定义了 Simple Task Orchestrator 的核心领域模型和业务实体。
+//! 
+//! ## 主要功能
+//! 
+//! - **任务实体**: 完整的任务生命周期管理
+//! - **状态管理**: 任务状态转换和验证
+//! - **优先级系统**: 任务优先级排序和调度
+//! - **执行模式**: 支持多种任务执行方式
+//! - **类型安全**: 使用 Rust 类型系统确保业务规则的正确性
+//! 
+//! ## 核心实体
+//! 
+//! - `Task`: 任务实体，包含完整的任务信息和生命周期
+//! - `TaskId`: 任务唯一标识符
+//! - `WorkerId`: 工作节点标识符
+//! - `TaskStatus`: 任务状态枚举
+//! - `TaskPriority`: 任务优先级枚举
+//! - `ExecutionMode`: 任务执行模式枚举
+//! - `TaskResult`: 任务执行结果
+//! 
+//! ## 请求和响应模型
+//! 
+//! - `CreateTaskRequest`: 创建任务请求
+//! - `AcquireTaskRequest`: 获取任务请求
+//! - `CompleteTaskRequest`: 完成任务请求
+//! - `TaskFilter`: 任务过滤器
+//! - `TaskStatistics`: 任务统计信息
+//! - `ApiResponse`: 统一的API响应格式
+//! 
+//! ## 使用示例
+//! 
+//! ```rust
+//! use simple_task_orchestrator::domain::{
+//!     Task, TaskId, TaskStatus, TaskPriority, ExecutionMode, CreateTaskRequest
+//! };
+//! 
+//! // 创建新任务
+//! let task = Task::new(
+//!     "/workspace/project".to_string(),
+//!     "实现用户认证功能".to_string(),
+//!     TaskPriority::High,
+//!     vec!["feature".to_string(), "auth".to_string()],
+//! ).with_execution_mode(ExecutionMode::ClaudeCode);
+//! 
+//! // 转换任务状态
+//! task.start(worker_id)?;
+//! task.complete(result)?;
+//! 
+//! // 使用过滤器查询任务
+//! let filter = TaskFilter::new()
+//!     .with_status(TaskStatus::Waiting)
+//!     .with_priority(TaskPriority::High)
+//!     .with_limit(10);
+//! ```
+//! 
+//! ## 任务状态管理
+//! 
+//! 任务支持以下状态转换：
+//! 
+//! - `Waiting` → `Working`: 开始执行任务
+//! - `Waiting` → `Cancelled`: 取消任务
+//! - `Working` → `Completed`: 任务完成
+//! - `Working` → `Failed`: 任务失败
+//! - `Working` → `Cancelled`: 取消执行中的任务
+//! - `Failed` → `Waiting`: 重试失败的任务
+//! 
+//! ## 执行模式
+//! 
+//! - `Standard`: 标准执行模式
+//! - `ClaudeCode`: 使用 Claude Code AI 辅助执行
+//! - `Custom(String)`: 自定义执行器
+//! 
+//! ## 错误处理
+//! 
+//! 所有状态转换操作都返回 `Result<T, String>`，提供详细的错误信息。
+
 use std::collections::HashMap;
 use uuid::Uuid;
 use chrono::{DateTime, Utc};

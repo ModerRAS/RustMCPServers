@@ -1,3 +1,188 @@
+//! # 领域模型模块
+//! 
+//! 该模块定义了 Task Orchestrator 的核心领域模型和业务实体，采用DDD（领域驱动设计）模式。
+//! 
+//! ## 主要功能
+//! 
+//! - **值对象**: 封装业务规则和验证逻辑
+//! - **聚合根**: 管理任务的生命周期和业务规则
+//! - **枚举类型**: 定义状态和优先级的业务概念
+//! - **错误处理**: 统一的领域错误类型
+//! - **验证**: 集成validator库进行数据验证
+//! 
+//! ## 核心概念
+//! 
+//! ### 值对象 (Value Objects)
+//! 
+//! - `TaskId`: 任务唯一标识符，基于UUID
+//! - `WorkDirectory`: 工作目录，包含路径验证
+//! - `Prompt`: 任务提示，包含长度和格式验证
+//! - `TaskTag`: 任务标签，包含格式验证
+//! - `WorkerId`: 工作节点标识符
+//! 
+//! ### 聚合根 (Aggregate Root)
+//! 
+//! - `Task`: 任务聚合根，管理完整的任务生命周期
+//! - `TaskHistory`: 任务历史记录
+//! - `TaskResult`: 任务执行结果
+//! 
+//! ### 枚举类型 (Enums)
+//! 
+//! - `TaskStatus`: 任务状态（Waiting, Working, Completed, Failed, Cancelled）
+//! - `TaskPriority`: 任务优先级（Low, Medium, High）
+//! - `TaskResultStatus`: 任务结果状态（Success, Failed）
+//! 
+//! ## 使用示例
+//! 
+//! ```rust
+//! use task_orchestrator::domain::{
+//!     Task, TaskId, WorkDirectory, Prompt, TaskTag, TaskPriority, TaskStatus
+//! };
+//! 
+//! // 创建值对象
+//! let work_directory = WorkDirectory::new("/workspace/project".to_string())?;
+//! let prompt = Prompt::new("实现用户认证功能".to_string())?;
+//! let tags = vec![
+//!     TaskTag::new("feature".to_string())?,
+//!     TaskTag::new("auth".to_string())?,
+//! ];
+//! 
+//! // 创建任务聚合根
+//! let mut task = Task::new(
+//!     work_directory,
+//!     prompt,
+//!     TaskPriority::High,
+//!     tags,
+//! );
+//! 
+//! // 状态转换
+//! let worker_id = WorkerId::new("worker-001".to_string())?;
+//! task.start(worker_id)?;
+//! 
+//! let result = TaskResult::success("任务执行成功".to_string());
+//! task.complete(result)?;
+//! 
+//! // 获取处理时间
+//! if let Some(duration) = task.processing_duration() {
+//!     println!("任务处理时间: {}毫秒", duration.num_milliseconds());
+//! }
+//! 
+//! // 检查任务是否过期
+//! if task.is_expired(3600) {
+//!     println!("任务已过期");
+//! }
+//! ```
+//! 
+//! ## 业务规则验证
+//! 
+//! ### 工作目录验证
+//! 
+//! - 必须是绝对路径（以/开头）
+//! - 长度不超过512字符
+//! - 不能包含相对路径（..）
+//! - 不能为空
+//! 
+//! ### 提示验证
+//! 
+//! - 长度不超过10000字符
+//! - 不能为空
+//! 
+//! ### 标签验证
+//! 
+//! - 长度不超过100字符
+//! - 只允许字母、数字、下划线和连字符
+//! - 不能为空
+//! 
+//! ### 工作节点ID验证
+//! 
+//! - 长度不超过100字符
+//! - 不能为空
+//! 
+//! ## 状态管理
+//! 
+//! 任务支持以下状态转换：
+//! 
+//! ```rust
+//! // 允许的状态转换
+//! Waiting → Working, Cancelled
+//! Working → Completed, Failed, Cancelled
+//! Failed → Waiting (重试)
+//! 
+//! // 终端状态（无法再转换）
+//! Completed, Failed, Cancelled
+//! ```
+//! 
+//! ## 重试机制
+//! 
+//! - 任务失败时自动重试，直到达到最大重试次数
+//! - 默认最大重试次数：3次
+//! - 重试时重置状态为Waiting，清除工作节点信息
+//! - 达到最大重试次数后标记为Failed
+//! 
+//! ## 版本控制
+//! 
+//! - 每个任务包含版本号，每次状态变更都会递增
+//! - 用于乐观并发控制和冲突检测
+//! 
+//! ## 错误处理
+//! 
+//! 定义了完整的错误类型体系：
+//! 
+//! - `TaskError`: 任务相关错误
+//! - `TaskIdError`: 任务ID错误
+//! - `WorkDirectoryError`: 工作目录错误
+//! - `PromptError`: 提示错误
+//! - `TaskTagError`: 标签错误
+//! - `WorkerIdError`: 工作节点ID错误
+//! - `TaskStatusError`: 任务状态错误
+//! - `TaskPriorityError`: 任务优先级错误
+//! 
+//! ## 请求验证
+//! 
+//! 使用validator库进行请求数据验证：
+//! 
+//! - `CreateTaskRequest`: 创建任务请求验证
+//! - `CompleteTaskRequest`: 完成任务请求验证
+//! - `AcquireTaskRequest`: 获取任务请求验证
+//! 
+//! ## 元数据支持
+//! 
+//! - 任务支持灵活的元数据存储
+//! - 使用`HashMap<String, serde_json::Value>`存储任意JSON数据
+//! - 支持添加和获取元数据
+//! 
+//! ## 序列化支持
+//! 
+//! 所有类型都支持完整的Serde序列化和反序列化：
+//! 
+//! ```rust
+//! use serde::{Serialize, Deserialize};
+//! 
+//! // 序列化为JSON
+//! let json = serde_json::to_string(&task)?;
+//! 
+//! // 从JSON反序列化
+//! let task: Task = serde_json::from_str(&json)?;
+//! ```
+//! 
+//! ## 字符串转换
+//! 
+//! 提供了字符串和枚举之间的转换：
+//! 
+//! ```rust
+//! use std::str::FromStr;
+//! 
+//! // 从字符串创建优先级
+//! let priority = TaskPriority::from_str("high")?;
+//! 
+//! // 从字符串创建状态
+//! let status = TaskStatus::from_str("working")?;
+//! 
+//! // 枚举转字符串
+//! println!("{}", priority);  // "high"
+//! println!("{}", status);    // "working"
+//! ```
+
 use std::fmt;
 use std::str::FromStr;
 use serde::{Serialize, Deserialize};
